@@ -1,22 +1,19 @@
-version: '3.7'
-
+version: "3.1"
 services:
   db:
-    image: mysql:8
-    container_name: mysql_db
+    image: mysql
+    restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: 898531
+      MYSQL_ROOT_PASSWORD: secret
       MYSQL_DATABASE: globodb
       MYSQL_USER: arpit
       MYSQL_PASSWORD: arpit
     ports:
-      - "3306:3306"
-
+      - 3306:3306 
+    volumes:
+      - ./mysql:/var/lib/mysql
   adminer:
     image: adminer
-    container_name: adminer
+    restart: always
     ports:
-      - "8080:8080"
-
- 
-
+      - 8080:8080
