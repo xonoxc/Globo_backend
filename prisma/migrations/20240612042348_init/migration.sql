@@ -3,7 +3,7 @@ CREATE TABLE `User` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(191) NOT NULL,
     `email` VARCHAR(191) NOT NULL,
-    `password` VARCHAR(191) NOT NULL,
+    `password` VARCHAR(20) NOT NULL,
     `avatar` VARCHAR(191) NULL,
     `isVerified` BOOLEAN NOT NULL DEFAULT false,
 
@@ -27,8 +27,8 @@ CREATE TABLE `UserPreferences` (
 -- CreateTable
 CREATE TABLE `Article` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `title` VARCHAR(191) NOT NULL,
-    `content` VARCHAR(191) NOT NULL,
+    `title` VARCHAR(100) NOT NULL,
+    `content` VARCHAR(1000) NOT NULL,
     `status` BOOLEAN NOT NULL DEFAULT true,
     `userId` INTEGER NOT NULL,
 

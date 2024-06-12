@@ -1,37 +1,37 @@
 generator client {
-  provider = "prisma-client-js"
+    provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "mysql"
-  url  = env("DATABASE_URL")
+    provider = "mysql"
+    url      = env("DATABASE_URL")
 }
 
 model User {
-  id Int @id @unique  @default(autoincrement())
-  name String 
-  email String
-  password String @db.VarChar(20)
-  avatar String?
-  isVerified Boolean @default(false)
-  articles Article[]
-  preferences UserPreferences?
+    id          Int              @id @unique @default(autoincrement())
+    name        String
+    email       String
+    password    String           @db.VarChar(20)
+    avatar      String?
+    isVerified  Boolean          @default(false)
+    articles    Article[]
+    preferences UserPreferences?
 }
 
 model UserPreferences {
-  id Int @id @unique @default(autoincrement())
-  proUser Boolean @default(false)
-  avatar String?
-  articleCount Int @default(0)
-  userId Int @unique
-  user User @relation(fields: [userId], references: [id])
+    id           Int     @id @unique @default(autoincrement())
+    proUser      Boolean @default(false)
+    avatar       String?
+    articleCount Int     @default(0)
+    userId       Int     @unique
+    user         User    @relation(fields: [userId], references: [id])
 }
 
 model Article {
-  id Int @id @unique @default(autoincrement())
-  title String @db.VarChar(100)
-  content String @db.VarChar(1000)
-  status Boolean @default(true)
-  userId Int @unique
-  user User  @relation(fields: [userId], references: [id])
+    id      Int     @id @unique @default(autoincrement())
+    title   String  @db.VarChar(100)
+    content String  @db.VarChar(1000)
+    status  Boolean @default(true)
+    userId  Int     @unique
+    user    User    @relation(fields: [userId], references: [id])
 }

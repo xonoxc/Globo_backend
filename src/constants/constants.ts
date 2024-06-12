@@ -1,1 +1,1 @@
-export const DB_NAME="globodb"
+export const DB_NAME = "globodb"
