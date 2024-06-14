@@ -17,13 +17,34 @@ class Cloudinary {
           try {
                if (!fileLocalPath) return null
 
-               const result = cloud.uploader.upload(fileLocalPath, {
+               const result = await cloud.uploader.upload(fileLocalPath, {
                     resource_type: "image",
                     folder: "globo-assets",
                })
                return result
           } catch (error: unknown) {
-               throw error
+               throw new Error(`[Cloudinary upload error]: ${error}`)
+          }
+     }
+
+     async uploadMultiple(files: string[]): Promise<null | string[]> {
+          try {
+               let uploadResponse: string[] = []
+               if (!files || files.length == 0) {
+                    return null
+               }
+
+               for await (const image of files) {
+                    const response = await cloud.uploader.upload(image, {
+                         resource_type: "image",
+                         folder: "globo-assets",
+                    })
+                    uploadResponse.push(response.secure_url)
+               }
+
+               return uploadResponse
+          } catch (error) {
+               throw new Error(`[Cloudinary upload error]: ${error}`)
           }
      }
 
@@ -31,12 +52,12 @@ class Cloudinary {
           try {
                if (!publicUrl) return null
 
-               const result = cloud.uploader.destroy(publicUrl, {
+               const result = await cloud.uploader.destroy(publicUrl, {
                     resource_type: "image",
                })
                return result
           } catch (error: unknown) {
-               throw error
+               throw new Error(`[Cloudinary delete error]: ${error}`)
           }
      }
 }

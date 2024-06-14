@@ -13,6 +13,7 @@ model User {
     email       String
     password    String           @db.VarChar(20)
     avatar      String?
+    coverImage  String?
     isVerified  Boolean          @default(false)
     articles    Article[]
     preferences UserPreferences?
