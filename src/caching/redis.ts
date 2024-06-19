@@ -8,6 +8,8 @@ class CacheService {
           this.client = createClient(clientOptions)
      }
 
+     /* Initializing the redis connection */
+
      public async initConnection(): Promise<void> {
           try {
                await this.client.connect()
@@ -21,16 +23,19 @@ class CacheService {
           }
      }
 
+     /* Initializing the Event Listenters */
      public initListenters(): void {
-          this.client.on("ready", () => {
+          this.client.on("ready", (): void => {
                console.log("Redis client is ready to use!")
           })
 
-          this.client.on("error", (err) => {
+          this.client.on("error", (err): void => {
                console.log(`Redis client Error : ${err}`)
           })
 
-          this.client.on("end", () => console.log("redis client disconnected!"))
+          this.client.on("end", (): void =>
+               console.log("redis client disconnected!")
+          )
      }
 
      public async setValue(key: string, value: object): Promise<boolean> {

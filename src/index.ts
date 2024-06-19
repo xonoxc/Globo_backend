@@ -2,10 +2,12 @@ import app from "./app/app"
 import { cache } from "./caching/redis"
 import { env } from "./utils/validation/env.validation"
 
-async function initServer() {
+/* Server initialization  */
+
+async function initServer(): Promise<void> {
      try {
           await cache.initConnection()
-          app.listen(env.PORT, () => {
+          app.listen(env.PORT, (): void => {
                console.log(`Server is listening on port : ${env.PORT}`)
           })
      } catch (err) {
@@ -14,7 +16,7 @@ async function initServer() {
      }
 }
 
-app.on("error", (error) => {
+app.on("error", (error): never => {
      console.error("Application Error:", error)
      throw error
 })

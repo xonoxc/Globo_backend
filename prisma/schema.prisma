@@ -11,7 +11,7 @@ model User {
     id          Int              @id @unique @default(autoincrement())
     name        String
     email       String
-    password    String           @db.VarChar(20)
+    password    String           @db.VarChar(60)
     avatar      String?
     coverImage  String?
     isVerified  Boolean          @default(false)

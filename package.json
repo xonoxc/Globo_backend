@@ -19,6 +19,7 @@
 	"author": "arpit",
 	"license": "ISC",
 	"devDependencies": {
+		"@prisma/client": "^5.15.1",
 		"@types/bcryptjs": "^2.4.6",
 		"@types/cookie-parser": "^1.4.7",
 		"@types/cors": "^2.8.17",
@@ -26,13 +27,14 @@
 		"@types/jsonwebtoken": "^9.0.6",
 		"@types/morgan": "^1.9.9",
 		"@types/multer": "^1.4.11",
+		"i": "^0.3.7",
+		"npm": "^10.8.1",
 		"prettier": "^3.2.5",
-		"prisma": "^5.15.0",
+		"prisma": "^5.15.1",
 		"ts-node-dev": "^2.0.0",
 		"typescript": "^5.4.4"
 	},
 	"dependencies": {
-		"@prisma/client": "^5.12.1",
 		"bcryptjs": "^2.4.3",
 		"cloudinary": "^2.1.0",
 		"cookie-parser": "^1.4.6",

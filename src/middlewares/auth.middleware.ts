@@ -7,7 +7,7 @@ import { prisma } from "../lib/prisma.client"
 import { tokenPayload } from "../types/tokenPayload"
 
 const authMiddleware = asyncHandler(
-     async (req: Request, _: Response, next: NextFunction) => {
+     async (req: Request, _: Response, next: NextFunction): Promise<void> => {
           try {
                const token =
                     req.cookies?.accessToken ||

@@ -1,23 +1,21 @@
 import { createLogger, format, transports } from "winston"
 
-const { combine, colorize, json, timestamp } = format
+const { combine, colorize, printf, timestamp, json } = format
 
-const consoleLogFormat = format.combine(
-     format.colorize(),
-     format.printf(({ level, message, timestamp }) => {
-          return `${level}:: ${message} :: ${timestamp}`
-     })
-)
+const consoleLogFormat = printf(({ level, message, timestamp }): string => {
+     return `${timestamp} ${level}: ${message}`
+})
 
 const logger = createLogger({
      level: "info",
-     format: combine(colorize(), timestamp(), json()),
+     format: combine(timestamp({ format: "YYYY-MM-DD HH:mm:ss" }), json()),
      transports: [
           new transports.Console({
-               format: consoleLogFormat,
+               format: combine(colorize(), consoleLogFormat),
           }),
           new transports.File({
                filename: "../../logs/app.log",
+               format: consoleLogFormat,
           }),
      ],
 })

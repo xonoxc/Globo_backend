@@ -1,4 +1,4 @@
-import { DeleteApiResponse, UploadApiResponse, v2 as cloud } from "cloudinary"
+import { DeleteApiResponse, v2 as cloud } from "cloudinary"
 import { configCredentials } from "./config"
 
 class Cloudinary {
@@ -11,9 +11,7 @@ class Cloudinary {
           })
      }
 
-     async uploadFile(
-          fileLocalPath: string
-     ): Promise<null | UploadApiResponse> {
+     async uploadFile(fileLocalPath: string): Promise<null | string> {
           try {
                if (!fileLocalPath) return null
 
@@ -21,7 +19,7 @@ class Cloudinary {
                     resource_type: "image",
                     folder: "globo-assets",
                })
-               return result
+               return result.secure_url
           } catch (error: unknown) {
                throw new Error(`[Cloudinary upload error]: ${error}`)
           }

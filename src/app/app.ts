@@ -37,20 +37,34 @@ app.use(cookieParser())
 app.use(
      morgan(morganFormat, {
           stream: {
-               write: (message: string) => {
-                    const messageChunks = message.split("")
+               write: (message) => {
+                    const [method, url, status, responseTime] = message
+                         .trim()
+                         .split(" ")
+
                     const logObject = {
-                         method: messageChunks[0],
-                         url: messageChunks[1],
-                         status: messageChunks[2],
-                         responseTime: messageChunks[3],
+                         method,
+                         url,
+                         status: parseInt(status, 10),
+                         responseTime: responseTime.replace("ms", ""),
                     }
+
                     logger.info(JSON.stringify(logObject))
                },
+          },
+          skip: () => {
+               const environment = process.env.NODE_ENV || "development"
+               return environment !== "development"
           },
      })
 )
 
 /* router imports  && injection */
+
+import userRouter from "../routes/user.routes"
+import healthCheckRouter from "../routes/healthCheck.route"
+
+app.use("/api/v1/usr", userRouter)
+app.use("api/v1", healthCheckRouter)
 
 export default app
