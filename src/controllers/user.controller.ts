@@ -12,12 +12,17 @@ import {
      generateAccessToken,
 } from "../utils/tokens/generate"
 import { isPasswordCorrect } from "../utils/password/check"
+import { User } from "@prisma/client"
+
+/* CONSTANTS */
 
 const BCRYPT_SALT_ROUNDS = 10
 const COOKIE_OPTIONS: CookieOptions = {
      httpOnly: true,
      secure: true,
 }
+
+/* CONTROLLERS */
 
 const registerUser = asyncHandler(
      async (req: ApiRequest, res: Response): Promise<any> => {
@@ -138,8 +143,8 @@ const loginUser = asyncHandler(async (req: Request, res: Response) => {
 
      return res
           .status(200)
-          .cookie(accessToken, COOKIE_OPTIONS)
-          .cookie(refreshToken, COOKIE_OPTIONS)
+          .cookie("accessToken", accessToken, COOKIE_OPTIONS)
+          .cookie("refreshToken", accessToken, COOKIE_OPTIONS)
           .json(
                new ApiResponse(200, "User logged in sucessfully", {
                     user: loggedInUser,
@@ -149,4 +154,28 @@ const loginUser = asyncHandler(async (req: Request, res: Response) => {
           )
 })
 
-export { registerUser, loginUser }
+const getCurrentUser = asyncHandler(
+     async (req: Request, res: Response): Promise<any> => {
+          const user = req.user as User
+
+          return res.status(200).json(
+               new ApiResponse(200, "User fetch success!", {
+                    id: user.id,
+                    name: user.name,
+                    email: user.email,
+                    avatar: user.avatar,
+                    coverImage: user.coverImage,
+               })
+          )
+     }
+)
+
+const logout = asyncHandler(async (_: Request, res: Response): Promise<any> => {
+     return res
+          .status(200)
+          .clearCookie("accessToken")
+          .clearCookie("refreshToken")
+          .json(new ApiResponse(200, "User logged out successfully!", {}))
+})
+
+export { registerUser, loginUser, getCurrentUser, logout }

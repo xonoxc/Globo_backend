@@ -1,6 +1,12 @@
 import { Router } from "express"
-import { loginUser, registerUser } from "../controllers/user.controller"
+import {
+     getCurrentUser,
+     loginUser,
+     logout,
+     registerUser,
+} from "../controllers/user.controller"
 import { upload } from "../middlewares/multer.middleware"
+import authMiddleware from "../middlewares/auth.middleware"
 
 const router: Router = Router()
 
@@ -17,5 +23,7 @@ router
      .post(registerUser)
 
 router.route("/auth/login").post(loginUser)
+router.route("/c").get(authMiddleware, getCurrentUser)
+router.route("/auth/logout").post(authMiddleware, logout)
 
 export default router
