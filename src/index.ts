@@ -8,7 +8,7 @@ async function initServer(): Promise<void> {
      try {
           await cache.initConnection()
           app.listen(env.PORT, (): void => {
-               console.log(`Server is listening on port : ${env.PORT}`)
+               console.log(`󰒋 Server is listening on port : ${env.PORT}`)
           })
      } catch (err) {
           console.error("Failed to initialize server :", err)

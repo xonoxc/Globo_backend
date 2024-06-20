@@ -1,5 +1,6 @@
-import { DeleteApiResponse, v2 as cloud } from "cloudinary"
+import { DeleteApiResponse, UploadApiResponse, v2 as cloud } from "cloudinary"
 import { configCredentials } from "./config"
+import fs from "fs"
 
 class Cloudinary {
      constructor() {
@@ -15,13 +16,21 @@ class Cloudinary {
           try {
                if (!fileLocalPath) return null
 
-               const result = await cloud.uploader.upload(fileLocalPath, {
-                    resource_type: "image",
-                    folder: "globo-assets",
-               })
+               const result: UploadApiResponse = await cloud.uploader.upload(
+                    fileLocalPath,
+                    {
+                         resource_type: "image",
+                         folder: "globo-assets",
+                    }
+               )
+
+               fs.unlinkSync(fileLocalPath)
+
                return result.secure_url
           } catch (error: unknown) {
-               throw new Error(`[Cloudinary upload error]: ${error}`)
+               fs.unlinkSync(fileLocalPath)
+
+               return null
           }
      }
 
@@ -33,10 +42,13 @@ class Cloudinary {
                }
 
                for await (const image of files) {
-                    const response = await cloud.uploader.upload(image, {
-                         resource_type: "image",
-                         folder: "globo-assets",
-                    })
+                    const response: UploadApiResponse =
+                         await cloud.uploader.upload(image, {
+                              resource_type: "image",
+                              folder: "globo-assets",
+                         })
+                    fs.unlinkSync(image)
+
                     uploadResponse.push(response.secure_url)
                }
 

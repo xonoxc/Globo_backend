@@ -14,7 +14,7 @@ const logger = createLogger({
                format: combine(colorize(), consoleLogFormat),
           }),
           new transports.File({
-               filename: "../../logs/app.log",
+               filename: "./logs/app.log",
                format: consoleLogFormat,
           }),
      ],

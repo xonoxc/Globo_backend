@@ -16,7 +16,7 @@ class CacheService {
 
                this.initListenters()
 
-               console.log("Redis client connected")
+               console.log(" Redis client connected")
           } catch (error) {
                console.error(`Redis connection failed! ${error}`)
                throw new Error("Redis connection failure!")

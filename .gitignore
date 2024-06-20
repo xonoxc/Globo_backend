@@ -3,4 +3,9 @@
 /.env
 .env.*
 
+
+/logs
+
 /mysql
+
+

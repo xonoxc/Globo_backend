@@ -53,6 +53,7 @@ const registerUser = asyncHandler(
                     const avatarLocalPath = req.files.profile[0].path
                     fileUpload.push(cloudinary.uploadFile(avatarLocalPath))
                }
+
                if (req.files.coverImage && req.files.coverImage.length > 0) {
                     const coverImageLocalPath = req.files.coverImage[0].path
                     fileUpload.push(cloudinary.uploadFile(coverImageLocalPath))
@@ -64,6 +65,8 @@ const registerUser = asyncHandler(
                parsedPayload.password,
                BCRYPT_SALT_ROUNDS
           )
+
+          console.log(uploadResult)
 
           const newUser = await prisma.user.create({
                data: {

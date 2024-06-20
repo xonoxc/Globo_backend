@@ -65,6 +65,6 @@ import userRouter from "../routes/user.routes"
 import healthCheckRouter from "../routes/healthCheck.route"
 
 app.use("/api/v1/usr", userRouter)
-app.use("api/v1", healthCheckRouter)
+app.use("/api/v1", healthCheckRouter)
 
 export default app
