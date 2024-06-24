@@ -5,9 +5,14 @@ import { asyncHandler } from "../utils"
 import jwt from "jsonwebtoken"
 import { prisma } from "../lib/prisma.client"
 import { tokenPayload } from "../types/tokenPayload"
+import { ApiRequest } from "../types/ApiRequest"
 
 const authMiddleware = asyncHandler(
-     async (req: Request, _: Response, next: NextFunction): Promise<void> => {
+     async (
+          req: ApiRequest,
+          _: Response,
+          next: NextFunction
+     ): Promise<void> => {
           try {
                const token =
                     req.cookies?.accessToken ||

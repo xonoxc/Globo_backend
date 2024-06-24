@@ -63,8 +63,10 @@ app.use(
 
 import userRouter from "../routes/user.routes"
 import healthCheckRouter from "../routes/healthCheck.route"
+import postRouter from "../routes/post.routes"
 
 app.use("/api/v1/usr", userRouter)
-app.use("/api/v1", healthCheckRouter)
+app.use("/api/v1/hc", healthCheckRouter)
+app.use("/api/v1/p", postRouter)
 
 export default app

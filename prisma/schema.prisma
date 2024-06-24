@@ -32,7 +32,8 @@ model Article {
     id      Int     @id @unique @default(autoincrement())
     title   String  @db.VarChar(100)
     content String  @db.VarChar(1000)
-    status  Boolean @default(true)
+    image   String?
+    status  String  @default("active")
     userId  Int     @unique
-    user    User    @relation(fields: [userId], references: [id])
+    User    User    @relation(fields: [userId], references: [id])
 }

@@ -1,6 +1,7 @@
+import fs from "fs"
 import { DeleteApiResponse, UploadApiResponse, v2 as cloud } from "cloudinary"
 import { configCredentials } from "./config"
-import fs from "fs"
+import { extractPublicId } from "cloudinary-build-url"
 
 class Cloudinary {
      constructor() {
@@ -58,11 +59,13 @@ class Cloudinary {
           }
      }
 
-     async deleteFile(publicUrl: string): Promise<null | DeleteApiResponse> {
+     async deleteFile(url: string): Promise<null | DeleteApiResponse> {
           try {
-               if (!publicUrl) return null
+               const publicId = extractPublicId(url)
 
-               const result = await cloud.uploader.destroy(publicUrl, {
+               if (!publicId) return null
+
+               const result = await cloud.uploader.destroy(publicId, {
                     resource_type: "image",
                })
                return result

@@ -3,8 +3,7 @@ import { CookieOptions, Response } from "express"
 import { ApiError, ApiResponse, asyncHandler } from "../utils"
 import bcrypt from "bcryptjs"
 import signupValidationn from "../utils/validation/signup"
-import { ApiRequest } from "../types/multerRequest"
-import { Request } from "express"
+import { ApiRequest } from "../types/ApiRequest"
 import { cloudinary } from "../cloudinary"
 import loginSchema from "../utils/validation/login"
 import {
@@ -71,8 +70,6 @@ const registerUser = asyncHandler(
                BCRYPT_SALT_ROUNDS
           )
 
-          console.log(uploadResult)
-
           const newUser = await prisma.user.create({
                data: {
                     name: parsedPayload.name,
@@ -96,7 +93,7 @@ const registerUser = asyncHandler(
      }
 )
 
-const loginUser = asyncHandler(async (req: Request, res: Response) => {
+const loginUser = asyncHandler(async (req: ApiRequest, res: Response) => {
      const payload = req.body
 
      const parsedPayload = loginSchema.safeParse(payload)
@@ -155,7 +152,7 @@ const loginUser = asyncHandler(async (req: Request, res: Response) => {
 })
 
 const getCurrentUser = asyncHandler(
-     async (req: Request, res: Response): Promise<any> => {
+     async (req: ApiRequest, res: Response): Promise<any> => {
           const user = req.user as User
 
           return res.status(200).json(
@@ -170,12 +167,14 @@ const getCurrentUser = asyncHandler(
      }
 )
 
-const logout = asyncHandler(async (_: Request, res: Response): Promise<any> => {
-     return res
-          .status(200)
-          .clearCookie("accessToken")
-          .clearCookie("refreshToken")
-          .json(new ApiResponse(200, "User logged out successfully!", {}))
-})
+const logout = asyncHandler(
+     async (_: ApiRequest, res: Response): Promise<any> => {
+          return res
+               .status(200)
+               .clearCookie("accessToken")
+               .clearCookie("refreshToken")
+               .json(new ApiResponse(200, "User logged out successfully!", {}))
+     }
+)
 
 export { registerUser, loginUser, getCurrentUser, logout }

@@ -47,7 +47,8 @@ class CacheService {
 
                if (response === "OK") return true
                return false
-          } catch (error) {
+          } catch (error: any) {
+               console.error(`Error while setting the cache : ${error.message}`)
                return false
           }
      }
@@ -61,6 +62,14 @@ class CacheService {
                return null
           } catch (error) {
                return null
+          }
+     }
+
+     public async deleteValue(key: string): Promise<void> {
+          try {
+               await this.client.del(key)
+          } catch (error) {
+               throw new Error(`Error while deleting cache value : ${error}`)
           }
      }
 
