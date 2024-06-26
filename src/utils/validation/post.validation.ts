@@ -7,6 +7,7 @@ const postSchema = z.object({
      content: z.string().max(1000, {
           message: "Content cannot be more than 1000 characters",
      }),
+     slug: z.string(),
      status: z.string(),
      userId: z.string(),
 })

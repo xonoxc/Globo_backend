@@ -1,13 +1,13 @@
 import { Response } from "express"
-import { ApiRequest } from "../../types/ApiRequest"
-import { asyncHandler, ApiResponse, ApiError } from "../../utils"
+import { ApiRequest } from "../types/ApiRequest"
+import { ApiResponse, ApiError, asyncHandler } from "../utils"
 import {
      postSchema,
      updatePostSchema,
-} from "../../utils/validation/post.validation"
-import { cloudinary } from "../../cloudinary"
-import { prisma } from "../../lib/prisma.client"
-import { cache } from "../../caching/redis"
+} from "../utils/validation/post.validation"
+import { cloudinary } from "../cloudinary"
+import { prisma } from "../lib/prisma.client"
+import { cache } from "../caching/redis"
 import { Article } from "@prisma/client"
 
 const createPost = asyncHandler(
@@ -33,6 +33,7 @@ const createPost = asyncHandler(
                title: parsedPayload.data.title,
                content: parsedPayload.data.content,
                image: imageSecureUrl || "",
+               slug: parsedPayload.data.slug,
                status: parsedPayload.data.status,
                userId: Number(parsedPayload.data.userId),
           }

@@ -34,6 +34,7 @@ model Article {
     content String  @db.VarChar(1000)
     image   String?
     status  String  @default("active")
+    slug    String  @default("")
     userId  Int     @unique
     User    User    @relation(fields: [userId], references: [id])
 }
