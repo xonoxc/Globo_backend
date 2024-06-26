@@ -8,7 +8,7 @@ import {
      getPostById,
      getUserPosts,
      updatePost,
-} from "../controllers/healthCheck/post.controller"
+} from "../controllers/post.controller"
 
 const router: Router = Router()
 
