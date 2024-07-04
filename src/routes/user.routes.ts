@@ -3,6 +3,7 @@ import {
      getCurrentUser,
      loginUser,
      logout,
+     refreshAccessToken,
      registerUser,
 } from "../controllers/user.controller"
 import { upload } from "../middlewares/multer.middleware"
@@ -23,6 +24,7 @@ router
      .post(registerUser)
 
 router.route("/auth/login").post(loginUser)
+router.route("/auth/refresh-token").post(refreshAccessToken)
 router.route("/c").get(authMiddleware, getCurrentUser)
 router.route("/auth/logout").post(authMiddleware, logout)
 

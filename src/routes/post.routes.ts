@@ -5,6 +5,7 @@ import {
      createPost,
      deletePost,
      getAllPosts,
+     getImagePreview,
      getPostById,
      getUserPosts,
      updatePost,
@@ -21,6 +22,8 @@ router
      .get(getUserPosts)
 
 router.route("/:postId").get(getPostById).delete(deletePost)
+
+router.route("/i/prev/:postId").get(getImagePreview)
 
 router
      .route("/patch/:postId")

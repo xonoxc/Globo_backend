@@ -3,9 +3,11 @@ CREATE TABLE `User` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(191) NOT NULL,
     `email` VARCHAR(191) NOT NULL,
-    `password` VARCHAR(20) NOT NULL,
+    `password` VARCHAR(60) NOT NULL,
     `avatar` VARCHAR(191) NULL,
     `isVerified` BOOLEAN NOT NULL DEFAULT false,
+    `coverImage` VARCHAR(191) NULL,
+    `refreshToken` VARCHAR(1000) NULL,
 
     UNIQUE INDEX `User_id_key`(`id`),
     PRIMARY KEY (`id`)
@@ -29,11 +31,12 @@ CREATE TABLE `Article` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `title` VARCHAR(100) NOT NULL,
     `content` VARCHAR(1000) NOT NULL,
-    `status` BOOLEAN NOT NULL DEFAULT true,
+    `status` VARCHAR(191) NOT NULL DEFAULT 'active',
     `userId` INTEGER NOT NULL,
+    `image` VARCHAR(191) NULL,
+    `slug` VARCHAR(191) NOT NULL DEFAULT '',
 
     UNIQUE INDEX `Article_id_key`(`id`),
-    UNIQUE INDEX `Article_userId_key`(`userId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 

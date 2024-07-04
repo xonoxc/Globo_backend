@@ -14,6 +14,8 @@ const createPost = asyncHandler(
      async (req: ApiRequest, res: Response): Promise<any> => {
           const payload = req.body
 
+          console.log(payload)
+
           const parsedPayload = postSchema.safeParse(payload)
 
           if (!parsedPayload.success)
@@ -21,7 +23,9 @@ const createPost = asyncHandler(
 
           let imageSecureUrl: string | null = ""
 
-          if (req.files && Array.isArray(req.files)) {
+          console.log(req.files)
+
+          if (req.files && Array.isArray(req.files.image)) {
                if (req.files.image.length > 0) {
                     const imageLocalPath = req.files.image[0].path
 
@@ -35,7 +39,7 @@ const createPost = asyncHandler(
                image: imageSecureUrl || "",
                slug: parsedPayload.data.slug,
                status: parsedPayload.data.status,
-               userId: Number(parsedPayload.data.userId),
+               userId: Number(req.user?.id),
           }
 
           const newPost = await prisma.article.create({
@@ -85,11 +89,9 @@ const getPostById = asyncHandler(async (req: ApiRequest, res: Response) => {
 
      await cache.setValue(cacheKey, post)
 
-     return res.status(200).json(
-          new ApiResponse(200, "Post fetched successfully!", {
-               post,
-          })
-     )
+     return res
+          .status(200)
+          .json(new ApiResponse(200, "Post fetched successfully!", post))
 })
 
 const getUserPosts = asyncHandler(async (req: ApiRequest, res: Response) => {
@@ -130,15 +132,30 @@ const deletePost = asyncHandler(
           if (!parsedPostId || isNaN(parsedPostId))
                throw new ApiError("invalid or missing postId", 400)
 
+          console.log(parsedPostId)
           const deleteResponse = await prisma.article.delete({
                where: {
                     id: parsedPostId,
                },
           })
 
-          if (deleteResponse) throw new ApiError("Article not found", 404)
+          if (!deleteResponse) throw new ApiError("Article not found", 404)
+
+          if (deleteResponse.image) {
+               const deletedAsset = await cloudinary.deleteFile(
+                    deleteResponse.image as string
+               )
+
+               if (!deletedAsset) {
+                    throw new ApiError(
+                         "Error occured while deleting asset",
+                         500
+                    )
+               }
+          }
 
           await cache.deleteValue(`post:${postId}`)
+          await cache.deleteValue("feed")
 
           await cache.deleteValue(`postsBy:${req.user?.id}`)
 
@@ -227,7 +244,7 @@ const updatePost = asyncHandler(async (req: ApiRequest, res: Response) => {
 })
 
 const getAllPosts = asyncHandler(
-     async (req: ApiRequest, res: Response): Promise<any> => {
+     async (_: ApiRequest, res: Response): Promise<any> => {
           const cacheKey = "feed"
 
           const cachedFeedValue = await cache.getValue(cacheKey)
@@ -244,7 +261,7 @@ const getAllPosts = asyncHandler(
                     )
           }
 
-          const response = await prisma.article.findMany({
+          const posts = await prisma.article.findMany({
                where: {
                     status: "active",
                },
@@ -252,10 +269,10 @@ const getAllPosts = asyncHandler(
 
           const currentApiResponse = new ApiResponse(
                200,
-               response.length > 0
+               posts.length > 0
                     ? "feed fetched successfully"
                     : "no active posts yet",
-               response.length > 0 ? response : []
+               posts
           )
 
           await cache.setValue(cacheKey, currentApiResponse)
@@ -264,8 +281,50 @@ const getAllPosts = asyncHandler(
      }
 )
 
+const getImagePreview = asyncHandler(
+     async (req: ApiRequest, res: Response): Promise<any> => {
+          const { postId } = req.params
+
+          const parsetPostId = parseInt(postId, 10)
+
+          if (!parsetPostId || !isNaN(parsetPostId))
+               throw new ApiError("Missing or Invalid postId", 400)
+
+          const cacheKey = `post:${parsetPostId}`
+
+          const chachePost = (await cache.getValue(cacheKey)) as Article | null
+
+          if (chachePost) {
+               return res.status(200).json(
+                    new ApiResponse(200, "Image preview fetch successful", {
+                         image_url: chachePost.image,
+                    })
+               )
+          }
+
+          const dbPost = await prisma.article.findUnique({
+               where: {
+                    id: parsetPostId,
+               },
+          })
+
+          if (!dbPost) {
+               throw new ApiError("Post not found!", 404)
+          }
+
+          await cache.setValue(cacheKey, dbPost)
+
+          return res.status(200).json(
+               new ApiResponse(200, "Image preview fetch successful", {
+                    image_url: dbPost.image,
+               })
+          )
+     }
+)
+
 export {
      createPost,
+     getImagePreview,
      getPostById,
      getUserPosts,
      deletePost,

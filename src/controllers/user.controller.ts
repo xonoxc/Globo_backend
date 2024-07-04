@@ -1,17 +1,18 @@
 import { prisma } from "../lib/prisma.client"
 import { CookieOptions, Response } from "express"
 import { ApiError, ApiResponse, asyncHandler } from "../utils"
+import jwt from "jsonwebtoken"
 import bcrypt from "bcryptjs"
 import signupValidationn from "../utils/validation/signup"
 import { ApiRequest } from "../types/ApiRequest"
 import { cloudinary } from "../cloudinary"
 import loginSchema from "../utils/validation/login"
-import {
-     generateRefreshToken,
-     generateAccessToken,
-} from "../utils/tokens/generate"
+import { generateTokens } from "../utils/tokens/generate"
 import { isPasswordCorrect } from "../utils/password/check"
 import { User } from "@prisma/client"
+import { env } from "../utils/validation/env.validation"
+import { cache } from "../caching/redis"
+import { tokenPayload } from "../types"
 
 /* CONSTANTS */
 
@@ -120,10 +121,7 @@ const loginUser = asyncHandler(async (req: ApiRequest, res: Response) => {
      if (!correctPassword)
           throw new ApiError("[Authenticatio failed]; incorrect password", 400)
 
-     const [accessToken, refreshToken] = await Promise.all([
-          generateAccessToken(existingUser),
-          generateRefreshToken(existingUser),
-     ])
+     const { accessToken, refreshToken } = await generateTokens(existingUser.id)
 
      const loggedInUser = await prisma.user.findUnique({
           where: {
@@ -157,18 +155,83 @@ const getCurrentUser = asyncHandler(
 
           return res.status(200).json(
                new ApiResponse(200, "User fetch success!", {
-                    id: user.id,
-                    name: user.name,
-                    email: user.email,
-                    avatar: user.avatar,
-                    coverImage: user.coverImage,
+                    user: {
+                         id: user.id,
+                         name: user.name,
+                         email: user.email,
+                         avatar: user.avatar,
+                         coverImage: user.coverImage,
+                    },
                })
           )
      }
 )
 
+const refreshAccessToken = asyncHandler(
+     async (req: ApiRequest, res: Response) => {
+          const incomingRefreshToken =
+               req.cookies.refreshToken || req.body.refreshToken
+
+          if (!incomingRefreshToken) {
+               throw new ApiError("RefreshToken not found", 400)
+          }
+
+          const cleanedToken = incomingRefreshToken
+               .replace(/^Bearer\s/, "")
+               .trim()
+
+          const decodedToken = jwt.verify(
+               cleanedToken,
+               String(env.REFRESH_TOKEN_SECRET)
+          ) as tokenPayload
+
+          const cacheKey = `userId:${decodedToken.id}`
+
+          let cacheResult = (await cache.getValue(cacheKey)) as User
+
+          if (!cacheResult) {
+               const existingUser = await prisma.user.findUnique({
+                    where: {
+                         id: decodedToken.id,
+                    },
+               })
+
+               if (!existingUser) {
+                    throw new ApiError("User not found!", 404)
+               }
+
+               await cache.setValue(cacheKey, { ...existingUser })
+
+               cacheResult = existingUser
+          }
+
+          if (decodedToken.id !== cacheResult.id) {
+               throw new ApiError("Token is either used or expired", 400)
+          }
+
+          const { accessToken, refreshToken } = await generateTokens(
+               decodedToken.id
+          )
+
+          return res
+               .status(200)
+               .cookie("accessToken", accessToken, COOKIE_OPTIONS)
+               .cookie("refreshToken", refreshToken, COOKIE_OPTIONS)
+               .json(
+                    new ApiResponse(
+                         200,
+                         "AccessToken refreshed successfully!",
+                         {
+                              accessToken,
+                              refreshToken,
+                         }
+                    )
+               )
+     }
+)
+
 const logout = asyncHandler(
-     async (_: ApiRequest, res: Response): Promise<any> => {
+     async (req: ApiRequest, res: Response): Promise<any> => {
           return res
                .status(200)
                .clearCookie("accessToken")
@@ -177,4 +240,4 @@ const logout = asyncHandler(
      }
 )
 
-export { registerUser, loginUser, getCurrentUser, logout }
+export { registerUser, loginUser, getCurrentUser, logout, refreshAccessToken }
