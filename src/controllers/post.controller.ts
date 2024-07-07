@@ -14,16 +14,12 @@ const createPost = asyncHandler(
      async (req: ApiRequest, res: Response): Promise<any> => {
           const payload = req.body
 
-          console.log(payload)
-
           const parsedPayload = postSchema.safeParse(payload)
 
           if (!parsedPayload.success)
                throw new ApiError(parsedPayload.error.message, 400)
 
           let imageSecureUrl: string | null = ""
-
-          console.log(req.files)
 
           if (req.files && Array.isArray(req.files.image)) {
                if (req.files.image.length > 0) {
@@ -51,6 +47,7 @@ const createPost = asyncHandler(
           await cache.setValue(cacheKey, newPost)
 
           await cache.deleteValue("feed")
+          await cache.deleteValue(`postsBy:${req.user?.id}`)
 
           return res.status(201).json(
                new ApiResponse(201, "Post created Successfully!", {
@@ -132,7 +129,6 @@ const deletePost = asyncHandler(
           if (!parsedPostId || isNaN(parsedPostId))
                throw new ApiError("invalid or missing postId", 400)
 
-          console.log(parsedPostId)
           const deleteResponse = await prisma.article.delete({
                where: {
                     id: parsedPostId,

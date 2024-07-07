@@ -83,6 +83,7 @@ const registerUser = asyncHandler(
 
           const apiResponse = new ApiResponse(201, "User created sucessfully", {
                createdUser: {
+				    id : newUser.id,
                     name: newUser.name,
                     email: newUser.email,
                     avatar: uploadResult.length > 0 ? uploadResult[0] : "",
