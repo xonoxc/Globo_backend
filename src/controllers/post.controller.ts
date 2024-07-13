@@ -8,8 +8,13 @@ import {
 import { cloudinary } from "../cloudinary"
 import { prisma } from "../lib/prisma.client"
 import { cache } from "../caching/redis"
+import { UserPreferences } from "@prisma/client"
 import { Article } from "@prisma/client"
 
+/*CONSTANTS*/
+import { FREE_POST_LIMIT } from "../constants/constants"
+
+/*CONTROLLERS*/
 const createPost = asyncHandler(
      async (req: ApiRequest, res: Response): Promise<any> => {
           const payload = req.body
@@ -18,6 +23,24 @@ const createPost = asyncHandler(
 
           if (!parsedPayload.success)
                throw new ApiError(parsedPayload.error.message, 400)
+
+          let prefs = (await cache.getValue(
+               `prefUserId:${req.user?.id}`
+          )) as UserPreferences
+
+          if (!prefs) {
+               const response = await prisma.userPreferences.findUnique({
+                    where: {
+                         userId: req.user?.id,
+                    },
+               })
+
+               prefs = response as UserPreferences
+          }
+
+          if (prefs.articleCount === FREE_POST_LIMIT && !prefs.proUser) {
+               throw new ApiError("free plan limit reached", 405)
+          }
 
           let imageSecureUrl: string | null = ""
 
@@ -29,25 +52,37 @@ const createPost = asyncHandler(
                }
           }
 
-          const newPostdata = {
-               title: parsedPayload.data.title,
-               content: parsedPayload.data.content,
-               image: imageSecureUrl || "",
-               slug: parsedPayload.data.slug,
-               status: parsedPayload.data.status,
-               userId: Number(req.user?.id),
-          }
+          const postTransaction = await prisma.$transaction(async (prisma) => {
+               const updated = await prisma.userPreferences.update({
+                    where: { userId: req.user?.id },
+                    data: { articleCount: { increment: 1 } },
+               })
+               if (!updated) {
+                    throw new ApiError("Error updating preferences", 500)
+               }
 
-          const newPost = await prisma.article.create({
-               data: newPostdata,
+               const newPostData = {
+                    title: parsedPayload.data.title,
+                    content: parsedPayload.data.content,
+                    image: imageSecureUrl || "",
+                    slug: parsedPayload.data.slug,
+                    status: parsedPayload.data.status,
+                    userId: Number(req.user?.id),
+               }
+
+               const newPost = await prisma.article.create({
+                    data: newPostData,
+               })
+
+               await cache.setValue(`prefUserId:${newPost.userId}`, updated)
+               await cache.setValue(`post:${newPost.id}`, newPost)
+               await cache.deleteValue("feed")
+               await cache.deleteValue(`postsBy:${newPost.userId}`)
+
+               return newPost
           })
 
-          const cacheKey = `post:${newPost.id}`
-
-          await cache.setValue(cacheKey, newPost)
-
-          await cache.deleteValue("feed")
-          await cache.deleteValue(`postsBy:${req.user?.id}`)
+          const newPost = postTransaction
 
           return res.status(201).json(
                new ApiResponse(201, "Post created Successfully!", {
@@ -260,6 +295,14 @@ const getAllPosts = asyncHandler(
           const posts = await prisma.article.findMany({
                where: {
                     status: "active",
+               },
+               include: {
+                    User: {
+                         select: {
+                              name: true,
+                              avatar: true,
+                         },
+                    },
                },
           })
 

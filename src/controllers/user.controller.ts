@@ -1,5 +1,5 @@
 import { prisma } from "../lib/prisma.client"
-import { CookieOptions, Response } from "express"
+import { Response } from "express"
 import { ApiError, ApiResponse, asyncHandler } from "../utils"
 import jwt from "jsonwebtoken"
 import bcrypt from "bcryptjs"
@@ -15,12 +15,7 @@ import { cache } from "../caching/redis"
 import { tokenPayload } from "../types"
 
 /* CONSTANTS */
-
-const BCRYPT_SALT_ROUNDS = 10
-const COOKIE_OPTIONS: CookieOptions = {
-     httpOnly: true,
-     secure: true,
-}
+import { COOKIE_OPTIONS, BCRYPT_SALT_ROUNDS } from "../constants/constants"
 
 /* CONTROLLERS */
 
@@ -71,19 +66,36 @@ const registerUser = asyncHandler(
                BCRYPT_SALT_ROUNDS
           )
 
-          const newUser = await prisma.user.create({
-               data: {
-                    name: parsedPayload.name,
-                    email: parsedPayload.email,
-                    password: hashedPassword,
-                    avatar: uploadResult.length > 0 ? uploadResult[0] : "",
-                    coverImage: uploadResult.length > 1 ? uploadResult[1] : "",
-               },
+          const dbTransaction = await prisma.$transaction(async (prisma) => {
+               const newUser = await prisma.user.create({
+                    data: {
+                         name: parsedPayload.name,
+                         email: parsedPayload.email,
+                         password: hashedPassword,
+                         avatar: uploadResult.length > 0 ? uploadResult[0] : "",
+                         coverImage:
+                              uploadResult.length > 1 ? uploadResult[1] : "",
+                    },
+               })
+
+               const userPrefrences = await prisma.userPreferences.create({
+                    data: {
+                         userId: newUser.id,
+                    },
+               })
+
+               if (!userPrefrences) {
+                    throw new ApiError("Error while initializing prefs", 500)
+               }
+
+               return newUser
           })
+
+          const newUser = dbTransaction
 
           const apiResponse = new ApiResponse(201, "User created sucessfully", {
                createdUser: {
-				    id : newUser.id,
+                    id: newUser.id,
                     name: newUser.name,
                     email: newUser.email,
                     avatar: uploadResult.length > 0 ? uploadResult[0] : "",
@@ -232,7 +244,7 @@ const refreshAccessToken = asyncHandler(
 )
 
 const logout = asyncHandler(
-     async (req: ApiRequest, res: Response): Promise<any> => {
+     async (_: ApiRequest, res: Response): Promise<any> => {
           return res
                .status(200)
                .clearCookie("accessToken")
