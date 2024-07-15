@@ -1,6 +1,7 @@
 import { prisma } from "../lib/prisma.client"
 import { Response } from "express"
 import { ApiError, ApiResponse, asyncHandler } from "../utils"
+import { v4 as uuidv4 } from "uuid"
 import jwt from "jsonwebtoken"
 import bcrypt from "bcryptjs"
 import signupValidationn from "../utils/validation/signup"
@@ -22,6 +23,11 @@ import { COOKIE_OPTIONS, BCRYPT_SALT_ROUNDS } from "../constants/constants"
 const registerUser = asyncHandler(
      async (req: ApiRequest, res: Response): Promise<any> => {
           const payload = req.body
+
+          console.log("payload", payload)
+
+          console.log("req.file", req.file)
+          console.log("req.files", req.files)
 
           const validationResult = signupValidationn.safeParse(payload)
 
@@ -49,12 +55,18 @@ const registerUser = asyncHandler(
 
           if (req.files) {
                const fileUpload = []
-               if (req.files.profile && req.files.profile.length > 0) {
+               if (
+                    Array.isArray(req.files.profile) &&
+                    req.files.profile.length > 0
+               ) {
                     const avatarLocalPath = req.files.profile[0].path
                     fileUpload.push(cloudinary.uploadFile(avatarLocalPath))
                }
 
-               if (req.files.coverImage && req.files.coverImage.length > 0) {
+               if (
+                    Array.isArray(req.files.coverImage) &&
+                    req.files.coverImage.length > 0
+               ) {
                     const coverImageLocalPath = req.files.coverImage[0].path
                     fileUpload.push(cloudinary.uploadFile(coverImageLocalPath))
                }
@@ -69,6 +81,7 @@ const registerUser = asyncHandler(
           const dbTransaction = await prisma.$transaction(async (prisma) => {
                const newUser = await prisma.user.create({
                     data: {
+                         id: uuidv4(),
                          name: parsedPayload.name,
                          email: parsedPayload.email,
                          password: hashedPassword,
@@ -80,6 +93,7 @@ const registerUser = asyncHandler(
 
                const userPrefrences = await prisma.userPreferences.create({
                     data: {
+                         id: uuidv4(),
                          userId: newUser.id,
                     },
                })

@@ -8,7 +8,7 @@ datasource db {
 }
 
 model User {
-    id           Int              @id @unique @default(autoincrement())
+    id           String           @id @default(uuid())
     name         String
     email        String
     password     String           @db.VarChar(60)
@@ -23,19 +23,19 @@ model User {
 }
 
 model UserPreferences {
-    id           Int     @id @unique @default(autoincrement())
+    id           String  @id @default(uuid())
     proUser      Boolean @default(false)
     articleCount Int     @default(0)
-    userId       Int     @unique
+    userId       String  @unique
     user         User    @relation(fields: [userId], references: [id])
 }
 
 model Article {
-    id        Int      @id @unique @default(autoincrement())
+    id        String   @id @default(uuid())
     title     String   @db.VarChar(100)
     content   String   @db.VarChar(10000)
     status    String   @default("active")
-    userId    Int
+    userId    String
     image     String?
     slug      String   @default("")
     User      User     @relation(fields: [userId], references: [id])

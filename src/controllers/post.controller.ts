@@ -1,5 +1,6 @@
 import { Response } from "express"
 import { ApiRequest } from "../types/ApiRequest"
+import { v4 as uuidv4 } from "uuid"
 import { ApiResponse, ApiError, asyncHandler } from "../utils"
 import {
      postSchema,
@@ -31,7 +32,7 @@ const createPost = asyncHandler(
           if (!prefs) {
                const response = await prisma.userPreferences.findUnique({
                     where: {
-                         userId: req.user?.id,
+                         userId: String(req.user?.id),
                     },
                })
 
@@ -54,7 +55,7 @@ const createPost = asyncHandler(
 
           const postTransaction = await prisma.$transaction(async (prisma) => {
                const updated = await prisma.userPreferences.update({
-                    where: { userId: req.user?.id },
+                    where: { userId: String(req.user?.id) },
                     data: { articleCount: { increment: 1 } },
                })
                if (!updated) {
@@ -62,12 +63,13 @@ const createPost = asyncHandler(
                }
 
                const newPostData = {
+                    id: uuidv4(),
                     title: parsedPayload.data.title,
                     content: parsedPayload.data.content,
                     image: imageSecureUrl || "",
                     slug: parsedPayload.data.slug,
                     status: parsedPayload.data.status,
-                    userId: Number(req.user?.id),
+                    userId: req.user?.id as string,
                }
 
                const newPost = await prisma.article.create({
@@ -95,9 +97,9 @@ const createPost = asyncHandler(
 const getPostById = asyncHandler(async (req: ApiRequest, res: Response) => {
      const { postId } = req.params
 
-     const parsedPostId = parseInt(postId.trim(), 10)
+     const parsedPostId = postId.trim()
 
-     if (!parsedPostId || isNaN(parsedPostId))
+     if (!parsedPostId || parsedPostId.length === 0)
           throw new ApiError("PostId missing or invalid !", 400)
 
      const cacheKey = `post:${parsedPostId}`
@@ -159,9 +161,9 @@ const deletePost = asyncHandler(
      async (req: ApiRequest, res: Response): Promise<any> => {
           const { postId } = req.params
 
-          const parsedPostId = parseInt(postId.trim(), 10)
+          const parsedPostId = postId.trim()
 
-          if (!parsedPostId || isNaN(parsedPostId))
+          if (!parsedPostId || parsedPostId.length === 0)
                throw new ApiError("invalid or missing postId", 400)
 
           const deleteResponse = await prisma.article.delete({
@@ -200,10 +202,9 @@ const updatePost = asyncHandler(async (req: ApiRequest, res: Response) => {
      const { postId } = req.params
      const payload = req.body
 
-     const parsedPostId = parseInt(postId.trim(), 10)
+     const parsedPostId = postId.trim()
 
-     if (!parsedPostId || isNaN(parsedPostId))
-          throw new ApiError("Invalid or missing postId", 400)
+     if (!parsedPostId) throw new ApiError("Invalid or missing postId", 400)
 
      const validationResponse = updatePostSchema.safeParse(payload)
 
@@ -324,9 +325,9 @@ const getImagePreview = asyncHandler(
      async (req: ApiRequest, res: Response): Promise<any> => {
           const { postId } = req.params
 
-          const parsetPostId = parseInt(postId, 10)
+          const parsetPostId = postId.trim()
 
-          if (!parsetPostId || !isNaN(parsetPostId))
+          if (!parsetPostId || parsetPostId.length === 0)
                throw new ApiError("Missing or Invalid postId", 400)
 
           const cacheKey = `post:${parsetPostId}`

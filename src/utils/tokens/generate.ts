@@ -6,7 +6,7 @@ import { ApiError } from "../apiError"
 
 type tokenResponse = { accessToken: string; refreshToken: string }
 
-const generateTokens = async (userId: number): Promise<tokenResponse> => {
+const generateTokens = async (userId: string): Promise<tokenResponse> => {
      try {
           const response = await prisma.user.findUnique({
                where: {
