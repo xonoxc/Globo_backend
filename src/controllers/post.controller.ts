@@ -23,7 +23,9 @@ const createPost = asyncHandler(
           const parsedPayload = postSchema.safeParse(payload)
 
           if (!parsedPayload.success)
-               throw new ApiError(parsedPayload.error.message, 400)
+               throw new ApiError("invalid properties", 400, [
+                    { ...parsedPayload.error, name: "validation error" },
+               ])
 
           let prefs = (await cache.getValue(
                `prefUserId:${req.user?.id}`
@@ -209,7 +211,9 @@ const updatePost = asyncHandler(async (req: ApiRequest, res: Response) => {
      const validationResponse = updatePostSchema.safeParse(payload)
 
      if (!validationResponse.success) {
-          throw new ApiError(validationResponse.error.message, 400)
+          throw new ApiError("invalid properties", 400, [
+               { ...validationResponse.error, name: "validation error" },
+          ])
      }
 
      const cacheKey = `post:${parsedPostId}`

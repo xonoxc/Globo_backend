@@ -18,4 +18,11 @@ const envSchema = z.object({
      NODE_ENV: z.string().optional(),
 })
 
-export const env = envSchema.parse(process.env)
+const result = envSchema.safeParse(process.env)
+
+if (!result.success) {
+     console.error("error validating env variables", result.error)
+     process.exit(1)
+}
+
+export const env = result.data
