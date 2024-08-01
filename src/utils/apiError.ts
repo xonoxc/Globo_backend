@@ -11,14 +11,14 @@ class ApiError extends Error implements ApiErrorProps {
      message: string
      statusCode: number
      data: null = null
-     errors: Error[]
+     errors: Partial<Error>[] = []
      success: boolean = false
      stack?: string | undefined
 
      constructor(
           message: string = "Something went wrong",
           statusCode: number,
-          errors: Error[] = []
+          errors: Partial<Error>[] = []
      ) {
           super(message)
           this.statusCode = statusCode

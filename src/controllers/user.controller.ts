@@ -24,15 +24,12 @@ const registerUser = asyncHandler(
      async (req: ApiRequest, res: Response): Promise<any> => {
           const payload = req.body
 
-          console.log("payload", payload)
-
-          console.log("req.file", req.file)
-          console.log("req.files", req.files)
-
           const validationResult = signupValidationn.safeParse(payload)
 
           if (!validationResult.success)
-               throw new ApiError(validationResult.error.message, 400)
+               throw new ApiError("invalid credentials crdrentials", 400, [
+                    { ...validationResult.error, name: "validation error" },
+               ])
 
           const parsedPayload = validationResult.data
 
@@ -127,7 +124,9 @@ const loginUser = asyncHandler(async (req: ApiRequest, res: Response) => {
      const parsedPayload = loginSchema.safeParse(payload)
 
      if (!parsedPayload.success) {
-          throw new ApiError(parsedPayload.error.message, 400)
+          throw new ApiError("invalid credentials", 400, [
+               { ...parsedPayload.error, name: "validation error" },
+          ])
      }
 
      const existingUser = await prisma.user.findFirst({

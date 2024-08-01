@@ -4,9 +4,12 @@ const postSchema = z.object({
      title: z
           .string()
           .max(100, { message: "title cannot be more than 100 characters" }),
-     content: z.string().max(10000, {
-          message: "Content cannot be more than 10000 characters",
-     }),
+     content: z
+          .string()
+          .max(10000, {
+               message: "Content cannot be more than 10000 characters",
+          })
+          .min(10, { message: "Content cannot be less than 10 characters" }),
      slug: z.string(),
      status: z.string(),
 })
