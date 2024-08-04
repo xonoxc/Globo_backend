@@ -15,6 +15,7 @@ const logger = createLogger({
           }),
           new transports.File({
                filename: "./logs/app.log",
+               level: "error",
                format: consoleLogFormat,
           }),
      ],

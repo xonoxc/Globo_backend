@@ -15,6 +15,8 @@ const router: Router = Router()
 
 router.use(authMiddleware)
 
+/* controllers imports */
+
 router
      .route("/")
      .post(upload.fields([{ name: "image", maxCount: 1 }]))

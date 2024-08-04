@@ -1,10 +1,12 @@
 import { Router } from "express"
 import {
      getCurrentUser,
+     getUserProfile,
      loginUser,
      logout,
      refreshAccessToken,
      registerUser,
+     updateUserProfile,
 } from "../controllers/user.controller"
 import { upload } from "../middlewares/multer.middleware"
 import authMiddleware from "../middlewares/auth.middleware"
@@ -24,8 +26,18 @@ router
      .post(registerUser)
 
 router.route("/auth/login").post(loginUser)
+router.route("/p/:userId").get(authMiddleware, getUserProfile)
 router.route("/auth/refresh-token").post(refreshAccessToken)
-router.route("/c").get(authMiddleware, getCurrentUser)
+router
+     .route("/c")
+     .get(authMiddleware, getCurrentUser)
+     .patch(
+          upload.fields([
+               { name: "profile", maxCount: 1 },
+               { name: "coverImage", maxCount: 1 },
+          ])
+     )
+     .patch(authMiddleware, updateUserProfile)
 router.route("/auth/logout").post(authMiddleware, logout)
 
 export default router

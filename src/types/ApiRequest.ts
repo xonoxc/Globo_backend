@@ -1,9 +1,9 @@
 import { Request } from "express"
-import { tokenPayload } from "./tokenPayload"
+import { User } from "@prisma/client"
 
 export interface ApiRequest extends Request {
      files?: {
           [fieldName: string]: Express.Multer.File[]
      }
-     user?: tokenPayload
+     user?: User
 }

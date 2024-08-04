@@ -1,7 +1,7 @@
 interface ApiErrorProps {
      message: string
      statusCode: number
-     errors: Error[]
+     errors: Partial<Error>[]
      success: boolean
      stack?: string
      data: null

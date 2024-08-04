@@ -37,7 +37,7 @@ app.use(cookieParser())
 app.use(
      morgan(morganFormat, {
           stream: {
-               write: (message) => {
+               write: (message): void => {
                     const [method, url, status, responseTime] = message
                          .trim()
                          .split(" ")
@@ -52,12 +52,21 @@ app.use(
                     logger.info(JSON.stringify(logObject))
                },
           },
-          skip: () => {
+          skip: (): boolean => {
                const environment = process.env.NODE_ENV || "development"
                return environment !== "development"
           },
      })
 )
+
+/* unhandled uncaught exceptions*/
+process.on("uncaughtException", (error: Error): void => {
+     logger.error(`Uncaught Exception: ${error.message}`)
+})
+
+process.on("unhandledRejection", (reason: Error): void => {
+     logger.error(`Unhandled Rejection: ${reason}`)
+})
 
 /* router imports  && injection */
 

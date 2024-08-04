@@ -14,6 +14,7 @@ import { User } from "@prisma/client"
 import { env } from "../utils/validation/env.validation"
 import { cache } from "../caching/redis"
 import { tokenPayload } from "../types"
+import { updateUserSchema } from "../utils/validation/update"
 
 /* CONSTANTS */
 import { COOKIE_OPTIONS, BCRYPT_SALT_ROUNDS } from "../constants/constants"
@@ -256,6 +257,169 @@ const refreshAccessToken = asyncHandler(
      }
 )
 
+const getUserProfile = asyncHandler(
+     async (req: ApiRequest, res: Response): Promise<any> => {
+          const { userId } = req.params
+
+          const cachedKey = `profile:${userId}`
+          const cachedProfile = await cache.getValue(cachedKey)
+
+          if (cachedProfile) {
+               return res.status(200).json(
+                    new ApiResponse(200, "User profile fetch success!", {
+                         profile: cachedProfile,
+                    })
+               )
+          }
+
+          const profile = await prisma.user.findUnique({
+               where: { id: userId },
+               select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    avatar: true,
+                    isVerified: true,
+                    createdAt: true,
+                    updatedAt: true,
+                    preferences: {
+                         select: {
+                              proUser: true,
+                              articleCount: true,
+                              bio: true,
+                         },
+                    },
+                    articles: {
+                         where: {
+                              status: "active",
+                              userId: userId,
+                         },
+                         select: {
+                              id: true,
+                         },
+                         orderBy: {
+                              createdAt: "desc",
+                         },
+                    },
+               },
+          })
+
+          await cache.setValue(cachedKey, { ...profile })
+
+          return res.json(
+               new ApiResponse(200, "User profile fetch success!", {
+                    profile,
+               })
+          )
+     }
+)
+
+const updateUserProfile = asyncHandler(
+     async (req: ApiRequest, res: Response) => {
+          const payload = req.body
+
+          const validationResult = updateUserSchema.safeParse(payload)
+
+          if (!validationResult.success)
+               throw new ApiError("invalid credentials crdrentials", 400, [
+                    { ...validationResult.error, name: "validation error" },
+               ])
+
+          const parsedPayload = validationResult.data
+
+          const updateData: Partial<User> = {}
+          if (parsedPayload.name) updateData.name = parsedPayload.name
+          if (parsedPayload.email) updateData.email = parsedPayload.email
+
+          const userId = req.user?.id
+
+          if (req.files) {
+               const fileDelete = []
+               const fileUpload = []
+               if (
+                    Array.isArray(req.files.profile) &&
+                    req.files.profile.length > 0
+               ) {
+                    fileDelete.push(
+                         cloudinary.deleteFile(req.user?.avatar as string)
+                    )
+
+                    const avatarLocalPath = req.files.profile[0].path
+
+                    fileUpload.push(cloudinary.uploadFile(avatarLocalPath))
+               }
+               if (
+                    Array.isArray(req.files.coverImage) &&
+                    req.files.coverImage.length > 0
+               ) {
+                    fileDelete.push(
+                         cloudinary.deleteFile(req.user?.coverImage as string)
+                    )
+
+                    const coverImageLocalPath = req.files.coverImage[0].path
+
+                    fileUpload.push(cloudinary.uploadFile(coverImageLocalPath))
+               }
+
+               await Promise.all(fileDelete)
+               const [updqtedAvatarUrl, updatedCoverImageUrl] =
+                    await Promise.all(fileUpload)
+
+               updateData.avatar = updqtedAvatarUrl
+               updateData.coverImage = updatedCoverImageUrl
+          }
+
+          const upadatePromises = []
+
+          if (Object.keys(updateData).length > 0) {
+               upadatePromises.push(
+                    prisma.user.update({
+                         where: {
+                              id: userId,
+                         },
+                         data: updateData,
+                         select: {
+                              id: true,
+                              name: true,
+                              email: true,
+                              avatar: true,
+                              isVerified: true,
+                              createdAt: true,
+                              updatedAt: true,
+                         },
+                    })
+               )
+          }
+
+          if (parsedPayload.bio) {
+               upadatePromises.push(
+                    prisma.userPreferences.update({
+                         where: {
+                              userId: userId,
+                         },
+                         data: {
+                              bio: parsedPayload.bio,
+                         },
+                    })
+               )
+          }
+
+          const updateResult = await Promise.all(upadatePromises)
+
+          await cache.setValue(`profile:${userId}`, updateResult)
+
+          return res
+               .status(200)
+               .json(
+                    new ApiResponse(
+                         200,
+                         "details updated successfully!",
+                         updateResult
+                    )
+               )
+     }
+)
+
 const logout = asyncHandler(
      async (_: ApiRequest, res: Response): Promise<any> => {
           return res
@@ -266,4 +430,12 @@ const logout = asyncHandler(
      }
 )
 
-export { registerUser, loginUser, getCurrentUser, logout, refreshAccessToken }
+export {
+     registerUser,
+     loginUser,
+     getCurrentUser,
+     logout,
+     refreshAccessToken,
+     getUserProfile,
+     updateUserProfile,
+}
