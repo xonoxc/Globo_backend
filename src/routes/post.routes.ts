@@ -8,6 +8,7 @@ import {
      getImagePreview,
      getPostById,
      getUserPosts,
+     handleSearchQuery,
      updatePost,
 } from "../controllers/post.controller"
 
@@ -33,5 +34,6 @@ router
      .patch(updatePost)
 
 router.route("/f/refresh").get(getAllPosts)
+router.route("/search").get(authMiddleware, handleSearchQuery)
 
 export default router

@@ -325,6 +325,69 @@ const getAllPosts = asyncHandler(
      }
 )
 
+const handleSearchQuery = asyncHandler(
+     async (req: ApiRequest, res: Response): Promise<any> => {
+          const { articleQuery } = req.query
+
+          let cacheKey = `query:${articleQuery}`
+          const chachedQueryResponse = (await cache.getValue(cacheKey)) as
+               | Article[]
+               | []
+
+          if (chachedQueryResponse.length > 0) {
+               return res
+                    .status(200)
+                    .json(
+                         new ApiResponse(
+                              200,
+                              "Search for results is successful",
+                              chachedQueryResponse
+                         )
+                    )
+          }
+
+          const { results, suggestions } = await prisma.$transaction(
+               async (prisma) => {
+                    const results = await prisma.article.findMany({
+                         where: {
+                              title: {
+                                   contains: String(articleQuery),
+                              },
+                              status: "active",
+                         },
+                    })
+
+                    const suggestions = await prisma.article.findMany({
+                         where: {
+                              title: {
+                                   startsWith: String(articleQuery),
+                              },
+                              status: "acitve",
+                         },
+                         take: 5,
+                         select: {
+                              title: true,
+                         },
+                    })
+
+                    return {
+                         results,
+                         suggestions,
+                    }
+               }
+          )
+
+          await cache.setValue(cacheKey, { results, suggestions })
+
+          return res.status(200).json(
+               new ApiResponse(200, "Search for results is successful", {
+                    results,
+                    suggestions,
+               })
+          )
+     }
+)
+
 const getImagePreview = asyncHandler(
      async (req: ApiRequest, res: Response): Promise<any> => {
           const { postId } = req.params
@@ -374,4 +437,5 @@ export {
      deletePost,
      updatePost,
      getAllPosts,
+     handleSearchQuery,
 }
