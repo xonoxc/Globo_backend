@@ -325,16 +325,18 @@ const getAllPosts = asyncHandler(
      }
 )
 
-const handleSearchQuery = asyncHandler(
+const getSearchResults = asyncHandler(
      async (req: ApiRequest, res: Response): Promise<any> => {
-          const { articleQuery } = req.query
+          let { articleQuery } = req.query
+
+          articleQuery = articleQuery?.toString().trim()
 
           let cacheKey = `query:${articleQuery}`
           const chachedQueryResponse = (await cache.getValue(cacheKey)) as
                | Article[]
                | []
 
-          if (chachedQueryResponse.length > 0) {
+          if (chachedQueryResponse) {
                return res
                     .status(200)
                     .json(
@@ -346,43 +348,39 @@ const handleSearchQuery = asyncHandler(
                     )
           }
 
-          const { results, suggestions } = await prisma.$transaction(
-               async (prisma) => {
-                    const results = await prisma.article.findMany({
-                         where: {
+          const results = await prisma.article.findMany({
+               where: {
+                    OR: [
+                         {
                               title: {
                                    contains: String(articleQuery),
                               },
-                              status: "active",
                          },
-                    })
-
-                    const suggestions = await prisma.article.findMany({
-                         where: {
-                              title: {
-                                   startsWith: String(articleQuery),
+                         {
+                              content: {
+                                   contains: String(articleQuery),
                               },
-                              status: "acitve",
                          },
-                         take: 5,
-                         select: {
-                              title: true,
+                         {
+                              slug: {
+                                   contains: String(articleQuery),
+                              },
                          },
-                    })
+                    ],
 
-                    return {
-                         results,
-                         suggestions,
-                    }
-               }
-          )
+                    status: "active",
+               },
+               orderBy: {
+                    createdAt: "desc",
+               },
+               take: 10,
+          })
 
-          await cache.setValue(cacheKey, { results, suggestions })
+          await cache.setValue(cacheKey, results)
 
           return res.status(200).json(
                new ApiResponse(200, "Search for results is successful", {
                     results,
-                    suggestions,
                })
           )
      }
@@ -437,5 +435,5 @@ export {
      deletePost,
      updatePost,
      getAllPosts,
-     handleSearchQuery,
+     getSearchResults,
 }

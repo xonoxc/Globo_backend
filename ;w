@@ -8,8 +8,8 @@ import {
      getImagePreview,
      getPostById,
      getUserPosts,
+     handleSearchQuery,
      updatePost,
-     getSearchResults,
 } from "../controllers/post.controller"
 
 const router: Router = Router()
@@ -24,9 +24,9 @@ router
      .post(createPost)
      .get(getUserPosts)
 
-router.route("/:postId").get(getPostById).delete(deletePost)
+router.route("/s").get(authMiddleware, handleSearchQuery)
 
-router.route("/s/post").get(authMiddleware, getSearchResults)
+router.route("/:postId").get(getPostById).delete(deletePost)
 
 router.route("/i/prev/:postId").get(getImagePreview)
 
