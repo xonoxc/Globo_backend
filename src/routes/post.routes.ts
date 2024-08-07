@@ -10,6 +10,7 @@ import {
      getUserPosts,
      updatePost,
      getSearchResults,
+     getSearchSuggestions,
 } from "../controllers/post.controller"
 
 const router: Router = Router()
@@ -27,6 +28,8 @@ router
 router.route("/:postId").get(getPostById).delete(deletePost)
 
 router.route("/s/post").get(authMiddleware, getSearchResults)
+
+router.route("/suggest/posts").get(authMiddleware, getSearchSuggestions)
 
 router.route("/i/prev/:postId").get(getImagePreview)
 

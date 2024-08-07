@@ -14,6 +14,7 @@ import { Article } from "@prisma/client"
 
 /*CONSTANTS*/
 import { FREE_POST_LIMIT } from "../constants/constants"
+import { querySchema } from "../utils/validation/query"
 
 /*CONTROLLERS*/
 const createPost = asyncHandler(
@@ -386,6 +387,45 @@ const getSearchResults = asyncHandler(
      }
 )
 
+const getSearchSuggestions = asyncHandler(
+     async (req: ApiRequest, res: Response): Promise<any> => {
+          const { query } = req.query
+
+          const queryValidation = querySchema.safeParse({
+               query: query?.toString().trim(),
+          })
+
+          if (!queryValidation.success)
+               throw new ApiError("invalid query", 400, [
+                    { ...queryValidation.error, name: "queryValidation error" },
+               ])
+
+          const parsedQuery = queryValidation.data
+
+          const sugggestions = await prisma.article.findMany({
+               where: {
+                    title: {
+                         startsWith: String(parsedQuery.query),
+                    },
+               },
+               select: {
+                    title: true,
+               },
+               take: 10,
+          })
+
+          return res
+               .status(200)
+               .json(
+                    new ApiResponse(
+                         200,
+                         "Search suggestion fetch success!",
+                         sugggestions
+                    )
+               )
+     }
+)
+
 const getImagePreview = asyncHandler(
      async (req: ApiRequest, res: Response): Promise<any> => {
           const { postId } = req.params
@@ -436,4 +476,5 @@ export {
      updatePost,
      getAllPosts,
      getSearchResults,
+     getSearchSuggestions,
 }
