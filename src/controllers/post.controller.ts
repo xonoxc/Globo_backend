@@ -330,12 +330,13 @@ const getSearchResults = asyncHandler(
      async (req: ApiRequest, res: Response): Promise<any> => {
           let { articleQuery } = req.query
 
-          articleQuery = articleQuery?.toString().trim()
+          articleQuery = decodeURIComponent(
+               articleQuery?.toString().trim() as string
+          )
+
 
           let cacheKey = `query:${articleQuery}`
-          const chachedQueryResponse = (await cache.getValue(cacheKey)) as
-               | Article[]
-               | []
+          const chachedQueryResponse = await cache.getValue(cacheKey)
 
           if (chachedQueryResponse) {
                return res
@@ -348,6 +349,7 @@ const getSearchResults = asyncHandler(
                          )
                     )
           }
+
 
           const results = await prisma.article.findMany({
                where: {
@@ -376,6 +378,7 @@ const getSearchResults = asyncHandler(
                },
                take: 10,
           })
+
 
           await cache.setValue(cacheKey, results)
 
