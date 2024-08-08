@@ -16,7 +16,7 @@ async function initServer(): Promise<void> {
      }
 }
 
-app.on("error", (error): never => {
+app.on("error", (error): void => {
      console.error("Application Error:", error)
      throw error
 })
