@@ -279,6 +279,7 @@ const getUserProfile = asyncHandler(
                     name: true,
                     email: true,
                     avatar: true,
+                    coverImage: true,
                     isVerified: true,
                     createdAt: true,
                     updatedAt: true,
@@ -296,6 +297,8 @@ const getUserProfile = asyncHandler(
                          },
                          select: {
                               id: true,
+                              title: true,
+                              createdAt: true,
                          },
                          orderBy: {
                               createdAt: "desc",

@@ -5,6 +5,7 @@
           "target": "esnext",
           "module": "esnext",
           "esModuleInterop": true,
+          "moduleResolution": "node",
           "forceConsistentCasingInFileNames": true,
           "noImplicitAny": true,
           "strict": true,

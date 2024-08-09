@@ -334,7 +334,6 @@ const getSearchResults = asyncHandler(
                articleQuery?.toString().trim() as string
           )
 
-
           let cacheKey = `query:${articleQuery}`
           const chachedQueryResponse = await cache.getValue(cacheKey)
 
@@ -349,7 +348,6 @@ const getSearchResults = asyncHandler(
                          )
                     )
           }
-
 
           const results = await prisma.article.findMany({
                where: {
@@ -373,12 +371,20 @@ const getSearchResults = asyncHandler(
 
                     status: "active",
                },
+               include: {
+                    User: {
+                         select: {
+                              id: true,
+                              name: true,
+                              avatar: true,
+                         },
+                    },
+               },
                orderBy: {
                     createdAt: "desc",
                },
                take: 10,
           })
-
 
           await cache.setValue(cacheKey, results)
 
