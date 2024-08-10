@@ -321,6 +321,8 @@ const updateUserProfile = asyncHandler(
      async (req: ApiRequest, res: Response) => {
           const payload = req.body
 
+          console.log(payload)
+
           const validationResult = updateUserSchema.safeParse(payload)
 
           if (!validationResult.success)
@@ -410,6 +412,8 @@ const updateUserProfile = asyncHandler(
           const updateResult = await Promise.all(upadatePromises)
 
           await cache.setValue(`profile:${userId}`, updateResult)
+          await cache.deleteValue("feed")
+          await cache.deleteValue(`postsBy:${userId}`)
 
           return res
                .status(200)
