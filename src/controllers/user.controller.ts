@@ -411,7 +411,7 @@ const updateUserProfile = asyncHandler(
 
           const updateResult = await Promise.all(upadatePromises)
 
-          await cache.setValue(`profile:${userId}`, updateResult)
+          await cache.deleteValue(`profile:${userId}`)
           await cache.deleteValue("feed")
           await cache.deleteValue(`postsBy:${userId}`)
 
