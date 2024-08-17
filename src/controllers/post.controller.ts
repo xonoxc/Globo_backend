@@ -268,9 +268,8 @@ const updatePost = asyncHandler(async (req: ApiRequest, res: Response) => {
      })
 
      await cache.setValue(cacheKey, updateResponse)
-
      await cache.deleteValue(`postsBy:${req.user?.id}`)
-
+     await cache.deleteValue(`profile:${req.user?.id}`)
      await cache.deleteValue("feed")
 
      return res.status(200).json(

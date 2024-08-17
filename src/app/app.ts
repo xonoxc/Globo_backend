@@ -73,9 +73,13 @@ process.on("unhandledRejection", (reason: Error): void => {
 import userRouter from "../routes/user.routes"
 import healthCheckRouter from "../routes/healthCheck.route"
 import postRouter from "../routes/post.routes"
+import paymentRouter from "../routes/payment.route"
+import completionRouter from "../routes/completion.routes"
 
 app.use("/api/v1/usr", userRouter)
 app.use("/api/v1/hc", healthCheckRouter)
 app.use("/api/v1/p", postRouter)
+app.use("/api/v1/s", paymentRouter)
+app.use("/api/v1/ai", completionRouter)
 
 export default app

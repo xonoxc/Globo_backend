@@ -34,7 +34,7 @@ model UserPreferences {
 model Article {
     id        String   @id @default(uuid())
     title     String   @db.VarChar(100)
-    content   String   @db.VarChar(10000)
+    content   String   @db.MediumText
     status    String   @default("active")
     userId    String
     image     String?
