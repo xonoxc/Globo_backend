@@ -1,6 +1,6 @@
 import { Response } from "express"
 import { ApiRequest } from "../types/ApiRequest"
-import { v4 as uuidv4 } from "uuid"
+import { v4 as uuidv4, validate } from "uuid"
 import { ApiResponse, ApiError, asyncHandler } from "../utils"
 import {
      postSchema,
@@ -42,8 +42,8 @@ const createPost = asyncHandler(
                prefs = response as UserPreferences
           }
 
-          if (prefs.articleCount === FREE_POST_LIMIT && !prefs.proUser) {
-               throw new ApiError("free plan limit reached", 405)
+          if (prefs.monthlyCount === FREE_POST_LIMIT && !prefs.proUser) {
+               throw new ApiError("Monthly post limit reached!", 405)
           }
 
           let imageSecureUrl: string | null = ""
@@ -59,7 +59,12 @@ const createPost = asyncHandler(
           const postTransaction = await prisma.$transaction(async (prisma) => {
                const updated = await prisma.userPreferences.update({
                     where: { userId: String(req.user?.id) },
-                    data: { articleCount: { increment: 1 } },
+                    data: {
+                         articleCount: { increment: 1 },
+                         monthlyCount: {
+                              increment: 1,
+                         },
+                    },
                })
                if (!updated) {
                     throw new ApiError("Error updating preferences", 500)
@@ -102,7 +107,7 @@ const getPostById = asyncHandler(async (req: ApiRequest, res: Response) => {
 
      const parsedPostId = postId.trim()
 
-     if (!parsedPostId || parsedPostId.length === 0)
+     if (!parsedPostId || parsedPostId.length === 0 || !validate(postId))
           throw new ApiError("PostId missing or invalid !", 400)
 
      const cacheKey = `post:${parsedPostId}`
@@ -166,7 +171,7 @@ const deletePost = asyncHandler(
 
           const parsedPostId = postId.trim()
 
-          if (!parsedPostId || parsedPostId.length === 0)
+          if (!parsedPostId || parsedPostId.length === 0 || !validate(postId))
                throw new ApiError("invalid or missing postId", 400)
 
           const deleteResponse = await prisma.article.delete({
@@ -440,7 +445,7 @@ const getImagePreview = asyncHandler(
 
           const parsetPostId = postId.trim()
 
-          if (!parsetPostId || parsetPostId.length === 0)
+          if (!parsetPostId || parsetPostId.length === 0 || !validate(postId))
                throw new ApiError("Missing or Invalid postId", 400)
 
           const cacheKey = `post:${parsetPostId}`

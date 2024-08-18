@@ -4,6 +4,7 @@ import {
      getUserProfile,
      loginUser,
      logout,
+     getUserSubscription,
      refreshAccessToken,
      registerUser,
      updateUserProfile,
@@ -28,6 +29,7 @@ router
 router.route("/auth/login").post(loginUser)
 router.route("/p/:userId").get(authMiddleware, getUserProfile)
 router.route("/auth/refresh-token").post(refreshAccessToken)
+router.route("/c/sub/:userId").get(authMiddleware, getUserSubscription)
 router
      .route("/c")
      .get(authMiddleware, getCurrentUser)

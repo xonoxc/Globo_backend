@@ -26,6 +26,7 @@ model UserPreferences {
     id           String  @id @default(uuid())
     proUser      Boolean @default(false)
     articleCount Int     @default(0)
+    monthlyCount Int     @default(0)
     bio          String? @db.VarChar(1000)
     userId       String  @unique
     user         User    @relation(fields: [userId], references: [id])

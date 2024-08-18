@@ -1,7 +1,7 @@
 import { prisma } from "../lib/prisma.client"
 import { Response } from "express"
 import { ApiError, ApiResponse, asyncHandler } from "../utils"
-import { v4 as uuidv4 } from "uuid"
+import { v4 as uuidv4, validate } from "uuid"
 import jwt from "jsonwebtoken"
 import bcrypt from "bcryptjs"
 import signupValidationn from "../utils/validation/signup"
@@ -437,6 +437,55 @@ const logout = asyncHandler(
      }
 )
 
+const getUserSubscription = asyncHandler(
+     async (req: ApiRequest, res: Response) => {
+          const { userId } = req.params
+
+          if (!userId || !validate(userId))
+               throw new ApiError("invalid or missing user id", 400)
+
+          const cachedKey = `sub:${userId}`
+          let cacheResult = (await cache.getValue(cachedKey)) as {
+               proUser: boolean
+          }
+
+          if (cacheResult) {
+               return res
+                    .status(200)
+                    .json(
+                         new ApiResponse(
+                              200,
+                              "Subscription fetched successfully",
+                              cacheResult
+                         )
+                    )
+          }
+
+          const subscription = await prisma.userPreferences.findUnique({
+               where: {
+                    userId,
+               },
+               select: {
+                    proUser: true,
+               },
+          })
+
+          if (!subscription) throw new ApiError("no subscription found", 404)
+
+          await cache.setValue(cachedKey, subscription)
+
+          return res
+               .status(200)
+               .json(
+                    new ApiResponse(
+                         200,
+                         "Subscription fetched successfully",
+                         subscription
+                    )
+               )
+     }
+)
+
 export {
      registerUser,
      loginUser,
@@ -445,4 +494,5 @@ export {
      refreshAccessToken,
      getUserProfile,
      updateUserProfile,
+     getUserSubscription,
 }
