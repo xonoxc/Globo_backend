@@ -38,7 +38,7 @@ const getCompletion = asyncHandler(async (req: ApiRequest, res: Response) => {
 const getGroqCompletion = async (content: string) => {
      const prompt = `
 Summarize the data in this piece of text and give back the most important points in the form of an array. Each element should be a point about what is written in the paragraph. Make sure the output is in a valid JavaScript array format.
-This is the content: "${content}"
+This is the content: "${content} and make sure that you just give me the array as response nothing else just start from [ and end with ]."
 `
 
      return groq.chat.completions.create({
