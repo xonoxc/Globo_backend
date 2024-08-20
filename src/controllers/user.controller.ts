@@ -321,8 +321,6 @@ const updateUserProfile = asyncHandler(
      async (req: ApiRequest, res: Response) => {
           const payload = req.body
 
-          console.log(payload)
-
           const validationResult = updateUserSchema.safeParse(payload)
 
           if (!validationResult.success)
@@ -337,6 +335,8 @@ const updateUserProfile = asyncHandler(
           if (parsedPayload.email) updateData.email = parsedPayload.email
 
           const userId = req.user?.id
+
+          console.log("req.files", req.files)
 
           if (req.files) {
                const fileDelete = []
@@ -388,6 +388,7 @@ const updateUserProfile = asyncHandler(
                               name: true,
                               email: true,
                               avatar: true,
+                              coverImage: true,
                               isVerified: true,
                               createdAt: true,
                               updatedAt: true,
