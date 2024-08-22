@@ -336,8 +336,6 @@ const updateUserProfile = asyncHandler(
 
           const userId = req.user?.id
 
-          console.log("req.files", req.files)
-
           if (req.files) {
                const fileDelete = []
                const fileUpload = []
@@ -367,10 +365,10 @@ const updateUserProfile = asyncHandler(
                }
 
                await Promise.all(fileDelete)
-               const [updqtedAvatarUrl, updatedCoverImageUrl] =
+               const [updatedAvatarUrl, updatedCoverImageUrl] =
                     await Promise.all(fileUpload)
 
-               updateData.avatar = updqtedAvatarUrl
+               updateData.avatar = updatedAvatarUrl
                updateData.coverImage = updatedCoverImageUrl
           }
 
