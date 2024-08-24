@@ -1,5 +1,6 @@
 import { RedisClientOptions, createClient } from "redis"
 import options from "./config"
+import chalk from "chalk"
 
 class CacheService {
      private client: ReturnType<typeof createClient>
@@ -16,7 +17,7 @@ class CacheService {
 
                this.initListenters()
 
-               console.log(" Redis client connected")
+               console.log(chalk.cyanBright("  Redis client connected"))
           } catch (error) {
                console.error(`Redis connection failed! ${error}`)
                throw new Error("Redis connection failure!")

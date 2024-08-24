@@ -1,3 +1,4 @@
+import chalk from "chalk"
 import app from "./app/app"
 import { cache } from "./caching/redis"
 import { env } from "./utils/validation/env.validation"
@@ -8,7 +9,9 @@ async function initServer(): Promise<void> {
      try {
           await cache.initConnection()
           app.listen(env.PORT, (): void => {
-               console.log(`󰒋 Server is listening on port : ${env.PORT}`)
+               console.log(
+                    chalk.grey(`󰒋 Server is listening on port : ${env.PORT}`)
+               )
           })
      } catch (err) {
           console.error("Failed to initialize server :", err)
