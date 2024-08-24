@@ -76,7 +76,7 @@ const registerUser = asyncHandler(
                BCRYPT_SALT_ROUNDS
           )
 
-          const dbTransaction = await prisma.$transaction(async (prisma) => {
+          const dbTransaction = await prisma.$transaction(async prisma => {
                const newUser = await prisma.user.create({
                     data: {
                          id: uuidv4(),

@@ -7,7 +7,7 @@ const options: RedisClientOptions = {
      socket: {
           host: env.REDIS_HOST || "localhost",
           port: Number(env.REDIS_PORT) || 6379,
-          reconnectStrategy: (retries) => {
+          reconnectStrategy: retries => {
                if (retries > 20) {
                     console.log(
                          "Too many attempts to reconnect . Redis Connection was terminated"
@@ -26,7 +26,7 @@ const ProdOptions: RedisClientOptions = {
      socket: {
           host: env.REDIS_HOST || "localhost",
           port: Number(env.REDIS_PORT) || 6379,
-          reconnectStrategy: (retries) => {
+          reconnectStrategy: retries => {
                if (retries > 20) {
                     console.error(
                          "Too many attempts to reconnect. Redis Connection was terminated"

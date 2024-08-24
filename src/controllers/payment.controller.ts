@@ -8,8 +8,6 @@ const createSubscription = asyncHandler(
      async (request: ApiRequest, response: Response) => {
           const body = request.body
 
-          console.log(body)
-
           const parsedPayload = paymentSchema.safeParse(body)
 
           if (!parsedPayload.success) {

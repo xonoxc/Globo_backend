@@ -56,7 +56,7 @@ const createPost = asyncHandler(
                }
           }
 
-          const postTransaction = await prisma.$transaction(async (prisma) => {
+          const postTransaction = await prisma.$transaction(async prisma => {
                const updated = await prisma.userPreferences.update({
                     where: { userId: String(req.user?.id) },
                     data: {
