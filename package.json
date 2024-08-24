@@ -6,7 +6,7 @@
      "main": "index.js",
      "scripts": {
           "start": "node --env-file=.env ./dist/index.js",
-          "start_prod": "node ./dist/index.js",
+          "start_prod": "node dist/index.js",
           "build": "npx tsc-esm",
           "start:dist": "node dist/src/index.js",
           "dev": "npx tsx watch --env-file=.env  src/index.ts"
