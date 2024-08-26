@@ -17,7 +17,7 @@ const paymentSchema = z.object({
                message: "orderId is required!",
           }),
      }),
-     cardNumber: z.number().optional(),
+     cardNumber: z.string().optional(),
 })
 
 export default paymentSchema

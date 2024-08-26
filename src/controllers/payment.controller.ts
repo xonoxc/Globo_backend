@@ -1,3 +1,4 @@
+import { cache } from "../caching/redis"
 import { prisma } from "../lib/prisma.client"
 import { ApiRequest } from "../types/ApiRequest"
 import { ApiError, ApiResponse, asyncHandler } from "../utils"
@@ -30,6 +31,8 @@ const createSubscription = asyncHandler(
           if (!updateResult) {
                throw new ApiError("error while creating subscription!", 400)
           }
+
+          await cache.deleteValue(`sub:${user_id}`)
 
           return response
                .status(200)
