@@ -88,6 +88,7 @@ const createPost = asyncHandler(
                await cache.setValue(`post:${newPost.id}`, newPost)
                await cache.deleteValue("feed")
                await cache.deleteValue(`postsBy:${newPost.userId}`)
+			   await cache.deleteValue(`profile:${req.user?.id}`)
 
                return newPost
           })
