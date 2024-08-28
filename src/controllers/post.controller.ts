@@ -88,7 +88,7 @@ const createPost = asyncHandler(
                await cache.setValue(`post:${newPost.id}`, newPost)
                await cache.deleteValue("feed")
                await cache.deleteValue(`postsBy:${newPost.userId}`)
-			   await cache.deleteValue(`profile:${req.user?.id}`)
+               await cache.deleteValue(`profile:${req.user?.id}`)
 
                return newPost
           })
@@ -419,7 +419,7 @@ const getSearchSuggestions = asyncHandler(
           const sugggestions = await prisma.article.findMany({
                where: {
                     title: {
-                         startsWith: String(parsedQuery.query),
+                         contains: String(parsedQuery.query),
                     },
                },
                select: {

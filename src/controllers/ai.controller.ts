@@ -9,13 +9,17 @@ import { Readable } from "stream"
 const groq = new Groq({ apiKey: env.AI_API_KEY })
 
 const getCompletion = asyncHandler(async (req: ApiRequest, res: Response) => {
-     const { content }: { content: string } = req.body
+     const { content, retry }: { content: string; retry: boolean } = req.body
 
      if (!content || content.trim() === "") {
           throw new ApiError("Invalid data ... content not provided!", 400)
      }
 
      const key = `summery:${content}`
+
+     if (retry) {
+          await cache.deleteValue(key)
+     }
 
      let cachedResponse = (await cache.getValue(key)) as {
           resCache: string
