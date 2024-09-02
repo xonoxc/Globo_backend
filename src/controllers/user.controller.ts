@@ -28,7 +28,7 @@ const registerUser = asyncHandler(
           const validationResult = signupValidationn.safeParse(payload)
 
           if (!validationResult.success)
-               throw new ApiError("invalid credentials crdrentials", 400, [
+               throw new ApiError("invalid credentials ", 400, [
                     { ...validationResult.error, name: "validation error" },
                ])
 
