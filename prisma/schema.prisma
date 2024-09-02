@@ -10,7 +10,7 @@ datasource db {
 model User {
     id           String           @id @default(uuid())
     name         String
-    email        String
+    email        String           @unique
     password     String           @db.VarChar(60)
     avatar       String?
     isVerified   Boolean          @default(false)
@@ -20,6 +20,10 @@ model User {
     preferences  UserPreferences?
     createdAt    DateTime         @default(now())
     updatedAt    DateTime         @updatedAt
+    comments     Comment[]
+    likes        Like[]
+    followedBy   Connection[]     @relation("FollowerRelation")
+    following    Connection[]     @relation("FollowingRelation")
 }
 
 model UserPreferences {
@@ -33,14 +37,53 @@ model UserPreferences {
 }
 
 model Article {
-    id        String   @id @default(uuid())
-    title     String   @db.VarChar(100)
-    content   String   @db.MediumText
-    status    String   @default("active")
+    id        String    @id @default(uuid())
+    title     String    @db.VarChar(100)
+    content   String    @db.MediumText
+    status    String    @default("active")
     userId    String
     image     String?
-    slug      String   @default("")
-    User      User     @relation(fields: [userId], references: [id])
+    slug      String    @default("")
+    user      User      @relation(fields: [userId], references: [id])
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+    comments  Comment[]
+    likes     Like[]
+}
+
+model Comment {
+    id        String    @id @default(uuid())
+    articleId String
+    content   String    @db.MediumText
+    userId    String
+    parentId  String?
+    article   Article   @relation(fields: [articleId], references: [id])
+    user      User      @relation(fields: [userId], references: [id])
+    parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+    replies   Comment[] @relation("CommentReplies")
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+
+    @@unique([articleId, userId, parentId])
+}
+
+model Like {
+    id        String   @id @default(uuid())
+    articleId String
+    userId    String
+    user      User     @relation(fields: [userId], references: [id])
+    article   Article  @relation(fields: [articleId], references: [id])
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+
+    @@unique([articleId, userId])
+}
+
+model Connection {
+    id          String   @id @default(uuid())
+    followerId  String
+    followingId String
+    follower    User     @relation("FollowerRelation", fields: [followerId], references: [id])
+    following   User     @relation("FollowingRelation", fields: [followingId], references: [id])
+    createdAt   DateTime @default(now())
 }
