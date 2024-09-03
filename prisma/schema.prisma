@@ -24,6 +24,7 @@ model User {
     likes        Like[]
     followedBy   Connection[]     @relation("FollowerRelation")
     following    Connection[]     @relation("FollowingRelation")
+    bookmarks    Bookmark[]       @relation("OwnerRelation")
 }
 
 model UserPreferences {
@@ -37,18 +38,19 @@ model UserPreferences {
 }
 
 model Article {
-    id        String    @id @default(uuid())
-    title     String    @db.VarChar(100)
-    content   String    @db.MediumText
-    status    String    @default("active")
+    id        String     @id @default(uuid())
+    title     String     @db.VarChar(100)
+    content   String     @db.MediumText
+    status    String     @default("active")
     userId    String
     image     String?
-    slug      String    @default("")
-    user      User      @relation(fields: [userId], references: [id])
-    createdAt DateTime  @default(now())
-    updatedAt DateTime  @updatedAt
+    slug      String     @default("")
+    user      User       @relation(fields: [userId], references: [id])
+    createdAt DateTime   @default(now())
+    updatedAt DateTime   @updatedAt
     comments  Comment[]
     likes     Like[]
+    Bookmark  Bookmark[] @relation("PostRelation")
 }
 
 model Comment {
@@ -86,4 +88,13 @@ model Connection {
     follower    User     @relation("FollowerRelation", fields: [followerId], references: [id])
     following   User     @relation("FollowingRelation", fields: [followingId], references: [id])
     createdAt   DateTime @default(now())
+}
+
+model Bookmark {
+    id        String @id @default(uuid())
+    articleId String
+    ownerId   String
+
+    post  Article @relation("PostRelation", fields: [articleId], references: [id])
+    owner User    @relation("OwnerRelation", fields: [ownerId], references: [id])
 }
