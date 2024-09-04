@@ -65,23 +65,18 @@ model Comment {
     replies   Comment[] @relation("CommentReplies")
     createdAt DateTime  @default(now())
     updatedAt DateTime  @updatedAt
-    Like      Like[]    @relation("LikeRelation")
-    Like      Like[]
 
     @@unique([articleId, userId, parentId])
 }
 
 model Like {
     id        String   @id @default(uuid())
-    articleId String?
-    commentId String?
+    articleId String
     userId    String
     user      User     @relation(fields: [userId], references: [id])
-    comment   Comment  @relation("LikeRelation", fields: [commentId], references: [id])
     article   Article  @relation(fields: [articleId], references: [id])
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
-    Comment   Comment? @relation(fields: [commentId], references: [id])
 
     @@unique([articleId, userId])
 }
