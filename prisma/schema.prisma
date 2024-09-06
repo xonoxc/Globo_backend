@@ -60,6 +60,7 @@ model Comment {
     userId    String
     parentId  String?
     article   Article   @relation(fields: [articleId], references: [id])
+    likes     Like[]    @relation("CommentLikes")
     user      User      @relation(fields: [userId], references: [id])
     parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
     replies   Comment[] @relation("CommentReplies")
@@ -70,13 +71,15 @@ model Comment {
 }
 
 model Like {
-    id        String   @id @default(uuid())
-    articleId String
-    userId    String
-    user      User     @relation(fields: [userId], references: [id])
-    article   Article  @relation(fields: [articleId], references: [id])
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    id              String   @id @default(uuid())
+    articleId       String?
+    userId          String
+    user            User     @relation(fields: [userId], references: [id])
+    article         Article? @relation(fields: [articleId], references: [id])
+    createdAt       DateTime @default(now())
+    updatedAt       DateTime @updatedAt
+    parentCommentId String?
+    comment         Comment? @relation("CommentLikes", fields: [parentCommentId], references: [id])
 
     @@unique([articleId, userId])
 }
