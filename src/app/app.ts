@@ -70,16 +70,28 @@ process.on("unhandledRejection", (reason: Error): void => {
 
 /* router imports  && injection */
 
+const apiRouter = express.Router()
+
 import userRouter from "../routes/user.routes"
 import healthCheckRouter from "../routes/healthCheck.route"
 import postRouter from "../routes/post.routes"
 import paymentRouter from "../routes/payment.route"
 import completionRouter from "../routes/completion.routes"
+import commentRouter from "../routes/comment.routes"
+import bookmarkRouter from "../routes/bookmark.routes"
+import connectionRouter from "../routes/connect.routes"
+import likeRouter from "../routes/likes.routes"
 
-app.use("/api/v1/usr", userRouter)
-app.use("/api/v1/hc", healthCheckRouter)
-app.use("/api/v1/p", postRouter)
-app.use("/api/v1/s", paymentRouter)
-app.use("/api/v1/ai", completionRouter)
+apiRouter.use("/usr", userRouter)
+apiRouter.use("/hc", healthCheckRouter)
+apiRouter.use("/p", postRouter)
+apiRouter.use("/s", paymentRouter)
+apiRouter.use("/ai", completionRouter)
+apiRouter.use("/comments", commentRouter)
+apiRouter.use("/bookmarks", bookmarkRouter)
+apiRouter.use("/likes", likeRouter)
+apiRouter.use("/connections", connectionRouter)
+
+app.use("/api/v1", apiRouter)
 
 export default app

@@ -49,6 +49,8 @@ const createComment = asyncHandler(async (req: ApiRequest, res: Response) => {
      if (!createdComment)
           throw new ApiError("Error while creating comment", 500)
 
+     await cache.deleteValue(`commentsPostId${parsedPayload.articleId}`)
+
      return res
           .status(201)
           .json(
@@ -61,16 +63,16 @@ const createComment = asyncHandler(async (req: ApiRequest, res: Response) => {
 })
 
 const getPostComments = asyncHandler(async (req: ApiRequest, res: Response) => {
-     const { postId } = req.params
+     const { articleId } = req.params
 
-     const validationResult = uuidSchema.safeParse(postId)
+     const validationResult = uuidSchema.safeParse(articleId)
      if (!validationResult.success) {
           throw new ApiError("Invalid post id", 400, [
                { ...validationResult.error, name: "validation result" },
           ])
      }
 
-     const cacheKey = `commentsPostId${postId}`
+     const cacheKey = `commentsPostId${articleId}`
 
      let cacheResult = await cache.getValue(cacheKey)
      if (cacheResult) {
@@ -83,7 +85,14 @@ const getPostComments = asyncHandler(async (req: ApiRequest, res: Response) => {
 
      const comments = await prisma.comment.findMany({
           where: {
-               articleId: postId,
+               AND: [
+                    {
+                         articleId: articleId,
+                    },
+                    {
+                         parentId: null,
+                    },
+               ],
           },
      })
 
@@ -97,7 +106,8 @@ const getPostComments = asyncHandler(async (req: ApiRequest, res: Response) => {
 })
 
 const updateComment = asyncHandler(async (req: ApiRequest, res: Response) => {
-     const { newContent, commentId } = req.body
+     const { commentId } = req.params
+     const { newContent } = req.body
 
      const validationResult = updateCommentValidationSchema.safeParse({
           commentId,
@@ -105,7 +115,7 @@ const updateComment = asyncHandler(async (req: ApiRequest, res: Response) => {
      })
      if (!validationResult.success) {
           throw new ApiError("invalid request payload ", 400, [
-               { ...validationResult, name: "validation result" },
+               { ...validationResult.error, name: "validation result" },
           ])
      }
 
@@ -130,7 +140,7 @@ const updateComment = asyncHandler(async (req: ApiRequest, res: Response) => {
 })
 
 const deleteComment = asyncHandler(async (req: ApiRequest, res: Response) => {
-     const { commentId } = req.body
+     const { commentId } = req.params
 
      const validationResult = uuidSchema.safeParse(commentId)
      if (!validationResult.success) {
@@ -154,4 +164,61 @@ const deleteComment = asyncHandler(async (req: ApiRequest, res: Response) => {
           .json(new ApiResponse(200, "Comment deleted successfully", {}))
 })
 
-export { createComment, deleteComment, updateComment, getPostComments }
+const getCommentReplies = asyncHandler(
+     async (req: ApiRequest, res: Response) => {
+          const { commentId } = req.params
+
+          const validationResult = uuidSchema.safeParse(commentId)
+          if (!validationResult.success) {
+               throw new ApiError("Invalid comment id", 400, [
+                    { ...validationResult.error, name: "validation result" },
+               ])
+          }
+
+          const cacheKey = `repliesCommentId${commentId}`
+
+          let cacheResult = await cache.getValue(cacheKey)
+          if (cacheResult) {
+               return res
+                    .status(200)
+                    .json(
+                         new ApiResponse(
+                              200,
+                              "comment replies fetch success!",
+                              cacheResult
+                         )
+                    )
+          }
+
+          const parsedCommentId = validationResult.data
+
+          const replies = await prisma.comment.findMany({
+               where: {
+                    parentId: parsedCommentId,
+               },
+          })
+
+          if (!replies)
+               throw new ApiError("Error while getting comment replies", 500)
+
+          await cache.setValue(cacheKey, replies)
+
+          return res
+               .status(200)
+               .json(
+                    new ApiResponse(
+                         200,
+                         "comment replies fetch success!",
+                         replies
+                    )
+               )
+     }
+)
+
+export {
+     createComment,
+     deleteComment,
+     updateComment,
+     getPostComments,
+     getCommentReplies,
+}

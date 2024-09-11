@@ -272,40 +272,74 @@ const getUserProfile = asyncHandler(
                )
           }
 
-          const profile = await prisma.user.findUnique({
-               where: { id: userId },
-               select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                    avatar: true,
-                    coverImage: true,
-                    isVerified: true,
-                    createdAt: true,
-                    updatedAt: true,
-                    preferences: {
-                         select: {
-                              proUser: true,
-                              articleCount: true,
-                              bio: true,
+          const profile = await prisma.$transaction(async prisma => {
+               const profileStats = await prisma.user.findUnique({
+                    where: { id: userId },
+                    select: {
+                         id: true,
+                         name: true,
+                         email: true,
+                         avatar: true,
+                         coverImage: true,
+                         isVerified: true,
+                         createdAt: true,
+                         updatedAt: true,
+                         preferences: {
+                              select: {
+                                   proUser: true,
+                                   articleCount: true,
+                                   bio: true,
+                              },
+                         },
+                         comments: {
+                              where: {
+                                   userId: userId,
+                              },
+                              select: {
+                                   id: true,
+                              },
+                         },
+                         bookmarks: {
+                              where: {
+                                   ownerId: userId,
+                              },
+                              select: {
+                                   id: true,
+                              },
+                         },
+                         articles: {
+                              where: {
+                                   status: "active",
+                                   userId: userId,
+                              },
+                              select: {
+                                   id: true,
+                                   title: true,
+                                   createdAt: true,
+                              },
+                              orderBy: {
+                                   createdAt: "desc",
+                              },
                          },
                     },
-                    articles: {
-                         where: {
-                              status: "active",
-                              userId: userId,
-                         },
-                         select: {
-                              id: true,
-                              title: true,
-                              createdAt: true,
-                         },
-                         orderBy: {
-                              createdAt: "desc",
-                         },
-                    },
-               },
+               })
+
+               const following = await prisma.connection.count({
+                    where: { followerId: userId },
+               })
+
+               const followers = await prisma.connection.count({
+                    where: { followingId: userId },
+               })
+
+               return {
+                    ...profileStats,
+                    following,
+                    followers,
+               }
           })
+
+          if (!profile) throw new ApiError("user profile not found", 404)
 
           await cache.setValue(cachedKey, { ...profile })
 
