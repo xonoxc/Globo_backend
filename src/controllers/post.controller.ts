@@ -1,7 +1,7 @@
 import { Response } from "express"
 import { ApiRequest } from "../types/ApiRequest"
 import { v4 as uuidv4, validate } from "uuid"
-import { ApiResponse, ApiError, asyncHandler } from "../utils"
+import { ApiResponse, ApiError, asyncHandler, uuidSchema } from "../utils"
 import {
      postSchema,
      updatePostSchema,
@@ -308,7 +308,7 @@ const getAllPosts = asyncHandler(
                     status: "active",
                },
                include: {
-                    User: {
+                    user: {
                          select: {
                               name: true,
                               avatar: true,
@@ -481,6 +481,17 @@ const getImagePreview = asyncHandler(
      }
 )
 
+const getPostStats = asyncHandler(async (req: ApiRequest, res: Response) => {
+     const { postId } = req.params
+
+     const validationRessult = uuidSchema.safeParse(postId)
+     if (!validationRessult.success) {
+          throw new ApiError("invalid postId", 400, [
+               { ...validationRessult.error, name: "validation error" },
+          ])
+     }
+})
+
 export {
      createPost,
      getImagePreview,
@@ -491,4 +502,5 @@ export {
      getAllPosts,
      getSearchResults,
      getSearchSuggestions,
+     getPostStats,
 }
