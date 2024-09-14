@@ -59,15 +59,6 @@ app.use(
      })
 )
 
-/* unhandled uncaught exceptions*/
-process.on("uncaughtException", (error: Error): void => {
-     logger.error(`Uncaught Exception: ${error.message}`)
-})
-
-process.on("unhandledRejection", (reason: Error): void => {
-     logger.error(`Unhandled Rejection: ${reason}`)
-})
-
 /* router imports  && injection */
 
 const apiRouter = express.Router()

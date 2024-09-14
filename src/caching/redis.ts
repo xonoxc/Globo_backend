@@ -4,6 +4,7 @@ import chalk from "chalk"
 
 class CacheService {
      private client: ReturnType<typeof createClient>
+     private isConnected = false
 
      constructor(clientOptions: RedisClientOptions) {
           this.client = createClient(clientOptions)
@@ -16,6 +17,8 @@ class CacheService {
                await this.client.connect()
 
                this.initListenters()
+
+               this.isConnected = true
 
                console.log(chalk.cyanBright("  Redis client connected"))
           } catch (error) {
@@ -74,13 +77,18 @@ class CacheService {
           }
      }
 
-     /*  if needed : In some special case */
+     /*  SHUTDOWN CASE */
 
      public async closeConnection(): Promise<void> {
           try {
-               await this.client.quit()
+               if (this.isConnected) {
+                    await this.client.quit()
+                    this.isConnected = false
+               } else {
+                    console.log("Redis client is already closed")
+               }
           } catch (error) {
-               throw error
+               console.error("Error while closing redis connection:", error)
           }
      }
 }

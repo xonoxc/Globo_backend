@@ -339,6 +339,8 @@ const getSearchResults = asyncHandler(
                articleQuery?.toString().trim() as string
           )
 
+          console.log(articleQuery)
+
           let cacheKey = `query:${articleQuery}`
           const chachedQueryResponse = await cache.getValue(cacheKey)
 
@@ -377,7 +379,7 @@ const getSearchResults = asyncHandler(
                     status: "active",
                },
                include: {
-                    User: {
+                    user: {
                          select: {
                               id: true,
                               name: true,
@@ -490,6 +492,19 @@ const getPostStats = asyncHandler(async (req: ApiRequest, res: Response) => {
                { ...validationRessult.error, name: "validation error" },
           ])
      }
+
+     const cacheKey = `stats:${postId}`
+     const cachedRecord = await cache.getValue(cacheKey)
+
+     if (cachedRecord) {
+          return res.status(200).json(
+               new ApiResponse(200, "post stats fetched successfully!", {
+                    stats: cachedRecord,
+               })
+          )
+     }
+
+     const postStats = await prisma.$transaction(async prisma => {})
 })
 
 export {
