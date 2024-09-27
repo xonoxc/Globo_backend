@@ -97,4 +97,33 @@ const getUserBookmarks = asyncHandler(
      }
 )
 
-export { toggleBookmark, getUserBookmarks }
+const getPostBookmarkStatus = asyncHandler(
+     async (req: ApiRequest, res: Response) => {
+          const { articleId } = req.params
+
+          const validationResult = uuidSchema.safeParse(articleId)
+          if (!validationResult.success) {
+               throw new ApiError("Invalid article id!", 400, [
+                    { ...validationResult.error, name: "validation error" },
+               ])
+          }
+
+          const parsedAtricleId = validationResult.data
+          const isBookmarked = await prisma.bookmark.findFirst({
+               where: {
+                    AND: [
+                         { ownerId: req.user?.id as string },
+                         { articleId: parsedAtricleId },
+                    ],
+               },
+          })
+
+          return res.status(200).json(
+               new ApiResponse(200, "Bookmark status fetched successfully!", {
+                    isBookmarked: !!isBookmarked,
+               })
+          )
+     }
+)
+
+export { toggleBookmark, getUserBookmarks, getPostBookmarkStatus }

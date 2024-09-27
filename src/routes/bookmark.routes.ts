@@ -1,5 +1,6 @@
 import { Router } from "express"
 import {
+     getPostBookmarkStatus,
      getUserBookmarks,
      toggleBookmark,
 } from "../controllers/bookmarks.controller"
@@ -12,5 +13,7 @@ router.use(authMiddleware)
 router.route("/c/usr").get(getUserBookmarks)
 
 router.route("/t/:articleId").post(toggleBookmark)
+
+router.route("/s/:articleId").get(getPostBookmarkStatus)
 
 export default router

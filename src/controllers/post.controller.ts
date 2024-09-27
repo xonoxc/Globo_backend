@@ -126,6 +126,14 @@ const getPostById = asyncHandler(async (req: ApiRequest, res: Response) => {
           where: {
                id: parsedPostId,
           },
+          include: {
+               user: {
+                    select: {
+                         name: true,
+                         avatar: true,
+                    },
+               },
+          },
      })
 
      if (!post) throw new ApiError("Post not found!", 404)
@@ -339,8 +347,6 @@ const getSearchResults = asyncHandler(
                articleQuery?.toString().trim() as string
           )
 
-          console.log(articleQuery)
-
           let cacheKey = `query:${articleQuery}`
           const chachedQueryResponse = await cache.getValue(cacheKey)
 
@@ -504,7 +510,31 @@ const getPostStats = asyncHandler(async (req: ApiRequest, res: Response) => {
           )
      }
 
-     const postStats = await prisma.$transaction(async prisma => {})
+     const postStats = await prisma.$transaction(async prisma => {
+          const likeCount = await prisma.like.count({
+               where: {
+                    articleId: postId,
+               },
+          })
+
+          const commentCount = await prisma.comment.count({
+               where: {
+                    articleId: postId,
+               },
+          })
+
+          return {
+               likeCount,
+               commentCount,
+          }
+     })
+     await cache.setValue(cacheKey, postStats)
+
+     return res.status(200).json(
+          new ApiResponse(200, "post stats fetched successfully!", {
+               stats: postStats,
+          })
+     )
 })
 
 export {
