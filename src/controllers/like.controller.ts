@@ -94,6 +94,9 @@ const toggleCommentLike = asyncHandler(
 
           if (!result) throw new ApiError("Cannot toggle like", 500)
 
+          await cache.deleteValue(`repliesCommentId:${parsedCommentId}`)
+          await cache.deleteValue(`commentsId:${result.articleId}`)
+
           return res
                .status(200)
                .json(new ApiResponse(200, "like toggled successfully!", {}))

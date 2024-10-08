@@ -75,8 +75,12 @@ const getUserBookmarks = asyncHandler(
                where: {
                     ownerId: userId,
                },
-               select: {
-                    articleId: true,
+               include: {
+                    post: {
+                         select: {
+                              title: true,
+                         },
+                    },
                },
                orderBy: {
                     createdAt: "desc",

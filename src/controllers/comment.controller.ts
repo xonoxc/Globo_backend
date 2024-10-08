@@ -42,6 +42,8 @@ const createComment = asyncHandler(async (req: ApiRequest, res: Response) => {
           creationData.parentId = parsedPayload.parentId
      }
 
+     console.log("creationData", creationData)
+
      const createdComment = await prisma.comment.create({
           data: creationData,
           include: {
