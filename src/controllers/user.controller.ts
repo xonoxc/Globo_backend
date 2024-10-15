@@ -261,17 +261,6 @@ const getUserProfile = asyncHandler(
 	async (req: ApiRequest, res: Response): Promise<any> => {
 		const { userId } = req.params
 
-		const cachedKey = `profile:${userId}`
-		const cachedProfile = await cache.getValue(cachedKey)
-
-		if (cachedProfile) {
-			return res.status(200).json(
-				new ApiResponse(200, "User profile fetch success!", {
-					profile: cachedProfile,
-				})
-			)
-		}
-
 		const profile = await prisma.$transaction(async prisma => {
 			const profileStats = await prisma.user.findUnique({
 				where: { id: userId },
@@ -332,16 +321,30 @@ const getUserProfile = asyncHandler(
 				where: { followingId: userId },
 			})
 
+			const isFollowing = await prisma.connection.findFirst({
+				where: {
+					followerId: req.user?.id,
+					followingId: userId,
+				},
+			})
+
+			const follows = await prisma.connection.findFirst({
+				where: {
+					followerId: userId,
+					followingId: req.user?.id,
+				}
+			})
+
 			return {
 				...profileStats,
 				following,
 				followers,
+				isFollowing: !!isFollowing,
+				follows: !!follows
 			}
 		})
 
 		if (!profile) throw new ApiError("user profile not found", 404)
-
-		await cache.setValue(cachedKey, { ...profile })
 
 		return res.json(
 			new ApiResponse(200, "User profile fetch success!", {
@@ -444,9 +447,11 @@ const updateUserProfile = asyncHandler(
 
 		const updateResult = await Promise.all(upadatePromises)
 
-		await cache.deleteValue(`profile:${userId}`)
 		await cache.deleteValue("feed")
 		await cache.deleteValue(`postsBy:${userId}`)
+		await cache.deleteValue(`commentsId`)
+		await cache.deleteValue(`repliesCommentId`)
+		await cache.deleteValue(`repliesCommentId`)
 
 		return res
 			.status(200)

@@ -88,7 +88,6 @@ const createPost = asyncHandler(
 			await cache.setValue(`post:${newPost.id}`, newPost)
 			await cache.deleteValue("feed")
 			await cache.deleteValue(`postsBy:${newPost.userId}`)
-			await cache.deleteValue(`profile:${req.user?.id}`)
 
 			return newPost
 		})
@@ -129,6 +128,7 @@ const getPostById = asyncHandler(async (req: ApiRequest, res: Response) => {
 		include: {
 			user: {
 				select: {
+					id: true,
 					name: true,
 					avatar: true,
 				},
@@ -283,7 +283,6 @@ const updatePost = asyncHandler(async (req: ApiRequest, res: Response) => {
 
 	await cache.setValue(cacheKey, updateResponse)
 	await cache.deleteValue(`postsBy:${req.user?.id}`)
-	await cache.deleteValue(`profile:${req.user?.id}`)
 	await cache.deleteValue("feed")
 
 	return res.status(200).json(
@@ -318,6 +317,7 @@ const getAllPosts = asyncHandler(
 			include: {
 				user: {
 					select: {
+						id: true,
 						name: true,
 						avatar: true,
 					},
@@ -424,16 +424,38 @@ const getSearchSuggestions = asyncHandler(
 
 		const parsedQuery = queryValidation.data
 
-		const sugggestions = await prisma.article.findMany({
-			where: {
-				title: {
-					contains: String(parsedQuery.query),
+		const suggestions = await prisma.$transaction(async prisma => {
+			const postSuggestions = await prisma.article.findMany({
+				where: {
+					title: {
+						contains: String(parsedQuery.query),
+					},
 				},
-			},
-			select: {
-				title: true,
-			},
-			take: 10,
+				select: {
+					title: true,
+				},
+				take: 3,
+			})
+
+			const userAcounts = await prisma.user.findMany({
+				where: {
+					name: {
+						contains: String(parsedQuery.query),
+					},
+				},
+				select: {
+					id: true,
+					name: true,
+					avatar: true,
+				},
+				take: 3,
+			})
+
+			return {
+				postSuggestions,
+				userAcounts,
+			}
+
 		})
 
 		return res
@@ -442,7 +464,7 @@ const getSearchSuggestions = asyncHandler(
 				new ApiResponse(
 					200,
 					"Search suggestion fetch success!",
-					sugggestions
+					suggestions
 				)
 			)
 	}

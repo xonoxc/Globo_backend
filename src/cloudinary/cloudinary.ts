@@ -2,77 +2,83 @@ import fs from "fs"
 import { DeleteApiResponse, UploadApiResponse, v2 as cloud } from "cloudinary"
 import { configCredentials } from "./config"
 import { extractPublicId } from "cloudinary-build-url"
+import { env } from "../utils/validation/env.validation"
 
 class Cloudinary {
-     constructor() {
-          cloud.config({
-               cloud_name: configCredentials.cloud_name,
-               api_key: configCredentials.api_key,
-               api_secret: configCredentials.api_secret,
-               secure: configCredentials.secure,
-          })
-     }
+	private folderName: string
 
-     async uploadFile(fileLocalPath: string): Promise<null | string> {
-          try {
-               if (!fileLocalPath) return null
+	constructor() {
+		cloud.config({
+			cloud_name: configCredentials.cloud_name,
+			api_key: configCredentials.api_key,
+			api_secret: configCredentials.api_secret,
+			secure: configCredentials.secure,
+		})
+		this.folderName =
+			env.NODE_ENV === "development" ?
+				env.CLOUDINARY_DEV_FOLDER : "globo-assets"
+	}
 
-               const result: UploadApiResponse = await cloud.uploader.upload(
-                    fileLocalPath,
-                    {
-                         resource_type: "image",
-                         folder: "globo-assets",
-                    }
-               )
+	async uploadFile(fileLocalPath: string): Promise<null | string> {
+		try {
+			if (!fileLocalPath) return null
 
-               fs.unlinkSync(fileLocalPath)
+			const result: UploadApiResponse = await cloud.uploader.upload(
+				fileLocalPath,
+				{
+					resource_type: "image",
+					folder: this.folderName,
+				}
+			)
 
-               return result.secure_url
-          } catch (error: unknown) {
-               fs.unlinkSync(fileLocalPath)
+			fs.unlinkSync(fileLocalPath)
 
-               return null
-          }
-     }
+			return result.secure_url
+		} catch (error: unknown) {
+			fs.unlinkSync(fileLocalPath)
 
-     async uploadMultiple(files: string[]): Promise<null | string[]> {
-          try {
-               let uploadResponse: string[] = []
-               if (!files || files.length == 0) {
-                    return null
-               }
+			return null
+		}
+	}
 
-               for await (const image of files) {
-                    const response: UploadApiResponse =
-                         await cloud.uploader.upload(image, {
-                              resource_type: "image",
-                              folder: "globo-assets",
-                         })
-                    fs.unlinkSync(image)
+	async uploadMultiple(files: string[]): Promise<null | string[]> {
+		try {
+			let uploadResponse: string[] = []
+			if (!files || files.length == 0) {
+				return null
+			}
 
-                    uploadResponse.push(response.secure_url)
-               }
+			for await (const image of files) {
+				const response: UploadApiResponse =
+					await cloud.uploader.upload(image, {
+						resource_type: "image",
+						folder: this.folderName,
+					})
+				fs.unlinkSync(image)
 
-               return uploadResponse
-          } catch (error) {
-               throw new Error(`[Cloudinary upload error]: ${error}`)
-          }
-     }
+				uploadResponse.push(response.secure_url)
+			}
 
-     async deleteFile(url: string): Promise<null | DeleteApiResponse> {
-          try {
-               const publicId = extractPublicId(url)
+			return uploadResponse
+		} catch (error) {
+			throw new Error(`[Cloudinary upload error]: ${error}`)
+		}
+	}
 
-               if (!publicId) return null
+	async deleteFile(url: string): Promise<null | DeleteApiResponse> {
+		try {
+			const publicId = extractPublicId(url)
 
-               const result = await cloud.uploader.destroy(publicId, {
-                    resource_type: "image",
-               })
-               return result
-          } catch (error: unknown) {
-               throw new Error(`[Cloudinary delete error]: ${error}`)
-          }
-     }
+			if (!publicId) return null
+
+			const result = await cloud.uploader.destroy(publicId, {
+				resource_type: "image",
+			})
+			return result
+		} catch (error: unknown) {
+			throw new Error(`[Cloudinary delete error]: ${error}`)
+		}
+	}
 }
 
 const cloudinary = new Cloudinary()

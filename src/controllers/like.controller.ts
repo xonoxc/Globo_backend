@@ -55,6 +55,8 @@ const toggleCommentLike = asyncHandler(
 		const { commentId } = req.params
 		const { articleId } = req.body
 
+		console.log("commentId", commentId, "articleId", articleId)
+
 		const dataSchema = z.object({
 			commentId: uuidSchema,
 			articleId: uuidSchema,
