@@ -4,8 +4,8 @@ import {
      deleteComment,
      updateComment,
      getPostComments,
-     getCommentReplies,
      getPostCommentCount,
+     getCommentLikedStatus,
 } from "../controllers/comment.controller"
 import authMiddleware from "../middlewares/auth.middleware"
 
@@ -19,7 +19,7 @@ router
      .route("/co/:commentId")
      .patch(updateComment)
      .delete(deleteComment)
-     .get(getCommentReplies)
+     .get(getCommentLikedStatus)
 
 router.route("/count/:postId").get(getPostCommentCount)
 

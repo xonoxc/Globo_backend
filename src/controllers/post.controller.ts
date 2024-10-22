@@ -3,8 +3,8 @@ import { ApiRequest } from "../types/ApiRequest"
 import { v4 as uuidv4, validate } from "uuid"
 import { ApiResponse, ApiError, asyncHandler, uuidSchema } from "../utils"
 import {
-	postSchema,
-	updatePostSchema,
+     postSchema,
+     updatePostSchema,
 } from "../utils/validation/post.validation"
 import { cloudinary } from "../cloudinary"
 import { prisma } from "../lib/prisma.client"
@@ -18,556 +18,555 @@ import { querySchema } from "../utils/validation/query"
 
 /*CONTROLLERS*/
 const createPost = asyncHandler(
-	async (req: ApiRequest, res: Response): Promise<any> => {
-		const payload = req.body
+     async (req: ApiRequest, res: Response): Promise<any> => {
+          const payload = req.body
 
-		const parsedPayload = postSchema.safeParse(payload)
+          const parsedPayload = postSchema.safeParse(payload)
 
-		if (!parsedPayload.success)
-			throw new ApiError("invalid properties", 400, [
-				{ ...parsedPayload.error, name: "validation error" },
-			])
+          if (!parsedPayload.success)
+               throw new ApiError("invalid properties", 400, [
+                    { ...parsedPayload.error, name: "validation error" },
+               ])
 
-		let prefs = (await cache.getValue(
-			`prefUserId:${req.user?.id}`
-		)) as UserPreferences
+          let prefs = (await cache.getValue(
+               `prefUserId:${req.user?.id}`
+          )) as UserPreferences
 
-		if (!prefs) {
-			const response = await prisma.userPreferences.findUnique({
-				where: {
-					userId: String(req.user?.id),
-				},
-			})
+          if (!prefs) {
+               const response = await prisma.userPreferences.findUnique({
+                    where: {
+                         userId: String(req.user?.id),
+                    },
+               })
 
-			prefs = response as UserPreferences
-		}
+               prefs = response as UserPreferences
+          }
 
-		if (prefs.monthlyCount === FREE_POST_LIMIT && !prefs.proUser) {
-			throw new ApiError("Monthly post limit reached!", 405)
-		}
+          if (prefs.monthlyCount === FREE_POST_LIMIT && !prefs.proUser) {
+               throw new ApiError("Monthly post limit reached!", 405)
+          }
 
-		let imageSecureUrl: string | null = ""
+          let imageSecureUrl: string | null = ""
 
-		if (req.files && Array.isArray(req.files.image)) {
-			if (req.files.image.length > 0) {
-				const imageLocalPath = req.files.image[0].path
+          if (req.files && Array.isArray(req.files.image)) {
+               if (req.files.image.length > 0) {
+                    const imageLocalPath = req.files.image[0].path
 
-				imageSecureUrl = await cloudinary.uploadFile(imageLocalPath)
-			}
-		}
+                    imageSecureUrl = await cloudinary.uploadFile(imageLocalPath)
+               }
+          }
 
-		const postTransaction = await prisma.$transaction(async prisma => {
-			const updated = await prisma.userPreferences.update({
-				where: { userId: String(req.user?.id) },
-				data: {
-					articleCount: { increment: 1 },
-					monthlyCount: {
-						increment: 1,
-					},
-				},
-			})
-			if (!updated) {
-				throw new ApiError("Error updating preferences", 500)
-			}
+          const postTransaction = await prisma.$transaction(async prisma => {
+               const updated = await prisma.userPreferences.update({
+                    where: { userId: String(req.user?.id) },
+                    data: {
+                         articleCount: { increment: 1 },
+                         monthlyCount: {
+                              increment: 1,
+                         },
+                    },
+               })
+               if (!updated) {
+                    throw new ApiError("Error updating preferences", 500)
+               }
 
-			const newPostData = {
-				id: uuidv4(),
-				title: parsedPayload.data.title,
-				content: parsedPayload.data.content,
-				image: imageSecureUrl || "",
-				slug: parsedPayload.data.slug,
-				status: parsedPayload.data.status,
-				userId: req.user?.id as string,
-			}
+               const newPostData = {
+                    id: uuidv4(),
+                    title: parsedPayload.data.title,
+                    content: parsedPayload.data.content,
+                    image: imageSecureUrl || "",
+                    slug: parsedPayload.data.slug,
+                    status: parsedPayload.data.status,
+                    userId: req.user?.id as string,
+               }
 
-			const newPost = await prisma.article.create({
-				data: newPostData,
-			})
+               const newPost = await prisma.article.create({
+                    data: newPostData,
+               })
 
-			await cache.setValue(`prefUserId:${newPost.userId}`, updated)
-			await cache.setValue(`post:${newPost.id}`, newPost)
-			await cache.deleteValue("feed")
-			await cache.deleteValue(`postsBy:${newPost.userId}`)
+               await cache.setValue(`prefUserId:${newPost.userId}`, updated)
+               await cache.setValue(`post:${newPost.id}`, newPost)
+               await cache.deleteValue("feed")
+               await cache.deleteValue(`postsBy:${newPost.userId}`)
 
-			return newPost
-		})
+               return newPost
+          })
 
-		const newPost = postTransaction
+          const newPost = postTransaction
 
-		return res.status(201).json(
-			new ApiResponse(201, "Post created Successfully!", {
-				newPost,
-			})
-		)
-	}
+          return res.status(201).json(
+               new ApiResponse(201, "Post created Successfully!", {
+                    newPost,
+               })
+          )
+     }
 )
 
 const getPostById = asyncHandler(async (req: ApiRequest, res: Response) => {
-	const { postId } = req.params
+     const { postId } = req.params
 
-	const parsedPostId = postId.trim()
+     const parsedPostId = postId.trim()
 
-	if (!parsedPostId || parsedPostId.length === 0 || !validate(postId))
-		throw new ApiError("PostId missing or invalid !", 400)
+     if (!parsedPostId || parsedPostId.length === 0 || !validate(postId))
+          throw new ApiError("PostId missing or invalid !", 400)
 
-	const cacheKey = `post:${parsedPostId}`
-	const cachedRecord = await cache.getValue(cacheKey)
+     const cacheKey = `post:${parsedPostId}`
+     const cachedRecord = await cache.getValue(cacheKey)
 
-	if (cachedRecord) {
-		return res.status(200).json(
-			new ApiResponse(200, "post fetched successfully!", {
-				post: cachedRecord,
-			})
-		)
-	}
+     if (cachedRecord) {
+          return res.status(200).json(
+               new ApiResponse(200, "post fetched successfully!", {
+                    post: cachedRecord,
+               })
+          )
+     }
 
-	const post = await prisma.article.findFirst({
-		where: {
-			id: parsedPostId,
-		},
-		include: {
-			user: {
-				select: {
-					id: true,
-					name: true,
-					avatar: true,
-				},
-			},
-		},
-	})
+     const post = await prisma.article.findFirst({
+          where: {
+               id: parsedPostId,
+          },
+          include: {
+               user: {
+                    select: {
+                         id: true,
+                         name: true,
+                         avatar: true,
+                    },
+               },
+          },
+     })
 
-	if (!post) throw new ApiError("Post not found!", 404)
+     if (!post) throw new ApiError("Post not found!", 404)
 
-	await cache.setValue(cacheKey, post)
+     await cache.setValue(cacheKey, post)
 
-	return res
-		.status(200)
-		.json(new ApiResponse(200, "Post fetched successfully!", post))
+     return res
+          .status(200)
+          .json(new ApiResponse(200, "Post fetched successfully!", post))
 })
 
 const getUserPosts = asyncHandler(async (req: ApiRequest, res: Response) => {
-	const userId = req.user?.id
+     const userId = req.user?.id
 
-	const cacheKey = `postsBy:${userId}`
-	const cachedRecord = await cache.getValue(cacheKey)
+     const cacheKey = `postsBy:${userId}`
+     const cachedRecord = await cache.getValue(cacheKey)
 
-	if (cachedRecord) {
-		return res.status(200).json(
-			new ApiResponse(200, "All user posts fetched successfully!", {
-				posts: cachedRecord,
-			})
-		)
-	}
+     if (cachedRecord) {
+          return res.status(200).json(
+               new ApiResponse(200, "All user posts fetched successfully!", {
+                    posts: cachedRecord,
+               })
+          )
+     }
 
-	const userPosts = await prisma.article.findMany({
-		where: {
-			userId: userId,
-		},
-	})
+     const userPosts = await prisma.article.findMany({
+          where: {
+               userId: userId,
+          },
+     })
 
-	await cache.setValue(cacheKey, userPosts.length ? userPosts : [])
+     await cache.setValue(cacheKey, userPosts.length ? userPosts : [])
 
-	return res.status(200).json(
-		new ApiResponse(200, "All user posts fetched successfully!", {
-			posts: userPosts.length > 0 ? userPosts : [],
-		})
-	)
+     return res.status(200).json(
+          new ApiResponse(200, "All user posts fetched successfully!", {
+               posts: userPosts.length > 0 ? userPosts : [],
+          })
+     )
 })
 
 const deletePost = asyncHandler(
-	async (req: ApiRequest, res: Response): Promise<any> => {
-		const { postId } = req.params
+     async (req: ApiRequest, res: Response): Promise<any> => {
+          const { postId } = req.params
 
-		const parsedPostId = postId.trim()
+          const parsedPostId = postId.trim()
 
-		if (!parsedPostId || parsedPostId.length === 0 || !validate(postId))
-			throw new ApiError("invalid or missing postId", 400)
+          if (!parsedPostId || parsedPostId.length === 0 || !validate(postId))
+               throw new ApiError("invalid or missing postId", 400)
 
-		const deleteResponse = await prisma.article.delete({
-			where: {
-				id: parsedPostId,
-			},
-		})
+          const deleteResponse = await prisma.article.delete({
+               where: {
+                    id: parsedPostId,
+               },
+          })
 
-		if (!deleteResponse) throw new ApiError("Article not found", 404)
+          if (!deleteResponse) throw new ApiError("Article not found", 404)
 
-		if (deleteResponse.image) {
-			const deletedAsset = await cloudinary.deleteFile(
-				deleteResponse.image as string
-			)
+          if (deleteResponse.image) {
+               const deletedAsset = await cloudinary.deleteFile(
+                    deleteResponse.image as string
+               )
 
-			if (!deletedAsset) {
-				throw new ApiError(
-					"Error occured while deleting asset",
-					500
-				)
-			}
-		}
+               if (!deletedAsset) {
+                    throw new ApiError(
+                         "Error occured while deleting asset",
+                         500
+                    )
+               }
+          }
 
-		await cache.deleteValue(`post:${postId}`)
-		await cache.deleteValue("feed")
+          await cache.deleteValue(`post:${postId}`)
+          await cache.deleteValue("feed")
 
-		await cache.deleteValue(`postsBy:${req.user?.id}`)
+          await cache.deleteValue(`postsBy:${req.user?.id}`)
 
-		return res
-			.status(200)
-			.json(new ApiResponse(200, "Article deleted successfully!", {}))
-	}
+          return res
+               .status(200)
+               .json(new ApiResponse(200, "Article deleted successfully!", {}))
+     }
 )
 
 const updatePost = asyncHandler(async (req: ApiRequest, res: Response) => {
-	const { postId } = req.params
-	const payload = req.body
+     const { postId } = req.params
+     const payload = req.body
 
-	const parsedPostId = postId.trim()
+     const parsedPostId = postId.trim()
 
-	if (!parsedPostId) throw new ApiError("Invalid or missing postId", 400)
+     if (!parsedPostId) throw new ApiError("Invalid or missing postId", 400)
 
-	const validationResponse = updatePostSchema.safeParse(payload)
+     const validationResponse = updatePostSchema.safeParse(payload)
 
-	if (!validationResponse.success) {
-		throw new ApiError("invalid properties", 400, [
-			{ ...validationResponse.error, name: "validation error" },
-		])
-	}
+     if (!validationResponse.success) {
+          throw new ApiError("invalid properties", 400, [
+               { ...validationResponse.error, name: "validation error" },
+          ])
+     }
 
-	const cacheKey = `post:${parsedPostId}`
+     const cacheKey = `post:${parsedPostId}`
 
-	let oldPost = (await cache.getValue(cacheKey)) as Article | null
+     let oldPost = (await cache.getValue(cacheKey)) as Article | null
 
-	if (!oldPost) {
-		const oldPostResponse = await prisma.article.findUnique({
-			where: {
-				id: parsedPostId,
-			},
-		})
+     if (!oldPost) {
+          const oldPostResponse = await prisma.article.findUnique({
+               where: {
+                    id: parsedPostId,
+               },
+          })
 
-		if (!oldPostResponse) throw new ApiError("Post not found", 404)
+          if (!oldPostResponse) throw new ApiError("Post not found", 404)
 
-		oldPost = oldPostResponse
+          oldPost = oldPostResponse
 
-		await cache.setValue(cacheKey, oldPostResponse)
-	}
+          await cache.setValue(cacheKey, oldPostResponse)
+     }
 
-	if (!oldPost) throw new ApiError("Post not found after cache set", 404)
+     if (!oldPost) throw new ApiError("Post not found after cache set", 404)
 
-	let updatedImageSecureUrl: string | null = null
+     let updatedImageSecureUrl: string | null = null
 
-	if (req.files && Array.isArray(req.files)) {
-		if (req.files.image.length > 0) {
-			const imageLocalPath = req.files.image[0].path
+     if (req.files && Array.isArray(req.files)) {
+          if (req.files.image.length > 0) {
+               const imageLocalPath = req.files.image[0].path
 
-			const deletionResponse = await cloudinary.deleteFile(
-				oldPost.image as string
-			)
+               const deletionResponse = await cloudinary.deleteFile(
+                    oldPost.image as string
+               )
 
-			if (!deletionResponse) {
-				throw new ApiError("Image url corrupt", 500)
-			}
-			updatedImageSecureUrl =
-				await cloudinary.uploadFile(imageLocalPath)
-		}
-	}
-	const updates = { ...validationResponse.data }
+               if (!deletionResponse) {
+                    throw new ApiError("Image url corrupt", 500)
+               }
+               updatedImageSecureUrl =
+                    await cloudinary.uploadFile(imageLocalPath)
+          }
+     }
+     const updates = { ...validationResponse.data }
 
-	if (updatedImageSecureUrl) {
-		updates.image = updatedImageSecureUrl
-	}
+     if (updatedImageSecureUrl) {
+          updates.image = updatedImageSecureUrl
+     }
 
-	const updateResponse = await prisma.article.update({
-		where: {
-			id: parsedPostId,
-		},
-		data: updates,
-	})
+     const updateResponse = await prisma.article.update({
+          where: {
+               id: parsedPostId,
+          },
+          data: updates,
+     })
 
-	await cache.setValue(cacheKey, updateResponse)
-	await cache.deleteValue(`postsBy:${req.user?.id}`)
-	await cache.deleteValue("feed")
+     await cache.setValue(cacheKey, updateResponse)
+     await cache.deleteValue(`postsBy:${req.user?.id}`)
+     await cache.deleteValue("feed")
 
-	return res.status(200).json(
-		new ApiResponse(200, "Post updated successfully!", {
-			updatedPost: updateResponse,
-		})
-	)
+     return res.status(200).json(
+          new ApiResponse(200, "Post updated successfully!", {
+               updatedPost: updateResponse,
+          })
+     )
 })
 
 const getAllPosts = asyncHandler(
-	async (_: ApiRequest, res: Response): Promise<any> => {
-		const cacheKey = "feed"
+     async (_: ApiRequest, res: Response): Promise<any> => {
+          const cacheKey = "feed"
 
-		const cachedFeedValue = await cache.getValue(cacheKey)
+          const cachedFeedValue = await cache.getValue(cacheKey)
 
-		if (cachedFeedValue) {
-			return res
-				.status(200)
-				.json(
-					new ApiResponse(
-						200,
-						"feed fetched successfully",
-						cachedFeedValue
-					)
-				)
-		}
+          if (cachedFeedValue) {
+               return res
+                    .status(200)
+                    .json(
+                         new ApiResponse(
+                              200,
+                              "feed fetched successfully",
+                              cachedFeedValue
+                         )
+                    )
+          }
 
-		const posts = await prisma.article.findMany({
-			where: {
-				status: "active",
-			},
-			include: {
-				user: {
-					select: {
-						id: true,
-						name: true,
-						avatar: true,
-					},
-				},
-			},
-		})
+          const posts = await prisma.article.findMany({
+               where: {
+                    status: "active",
+               },
+               include: {
+                    user: {
+                         select: {
+                              id: true,
+                              name: true,
+                              avatar: true,
+                         },
+                    },
+               },
+          })
 
-		const currentApiResponse = new ApiResponse(
-			200,
-			posts.length > 0
-				? "feed fetched successfully"
-				: "no active posts yet",
-			posts
-		)
+          const currentApiResponse = new ApiResponse(
+               200,
+               posts.length > 0
+                    ? "feed fetched successfully"
+                    : "no active posts yet",
+               posts
+          )
 
-		await cache.setValue(cacheKey, currentApiResponse)
+          await cache.setValue(cacheKey, currentApiResponse)
 
-		return res.status(200).json(currentApiResponse)
-	}
+          return res.status(200).json(currentApiResponse)
+     }
 )
 
 const getSearchResults = asyncHandler(
-	async (req: ApiRequest, res: Response): Promise<any> => {
-		let { articleQuery } = req.query
+     async (req: ApiRequest, res: Response): Promise<any> => {
+          let { articleQuery } = req.query
 
-		articleQuery = decodeURIComponent(
-			articleQuery?.toString().trim() as string
-		)
+          articleQuery = decodeURIComponent(
+               articleQuery?.toString().trim() as string
+          )
 
-		let cacheKey = `query:${articleQuery}`
-		const chachedQueryResponse = await cache.getValue(cacheKey)
+          let cacheKey = `query:${articleQuery}`
+          const chachedQueryResponse = await cache.getValue(cacheKey)
 
-		if (chachedQueryResponse) {
-			return res
-				.status(200)
-				.json(
-					new ApiResponse(
-						200,
-						"Search for results is successful",
-						chachedQueryResponse
-					)
-				)
-		}
+          if (chachedQueryResponse) {
+               return res
+                    .status(200)
+                    .json(
+                         new ApiResponse(
+                              200,
+                              "Search for results is successful",
+                              chachedQueryResponse
+                         )
+                    )
+          }
 
-		const results = await prisma.article.findMany({
-			where: {
-				OR: [
-					{
-						title: {
-							contains: String(articleQuery),
-						},
-					},
-					{
-						content: {
-							contains: String(articleQuery),
-						},
-					},
-					{
-						slug: {
-							contains: String(articleQuery),
-						},
-					},
-				],
+          const results = await prisma.article.findMany({
+               where: {
+                    OR: [
+                         {
+                              title: {
+                                   contains: String(articleQuery),
+                              },
+                         },
+                         {
+                              content: {
+                                   contains: String(articleQuery),
+                              },
+                         },
+                         {
+                              slug: {
+                                   contains: String(articleQuery),
+                              },
+                         },
+                    ],
 
-				status: "active",
-			},
-			include: {
-				user: {
-					select: {
-						id: true,
-						name: true,
-						avatar: true,
-					},
-				},
-			},
-			orderBy: {
-				createdAt: "desc",
-			},
-			take: 10,
-		})
+                    status: "active",
+               },
+               include: {
+                    user: {
+                         select: {
+                              id: true,
+                              name: true,
+                              avatar: true,
+                         },
+                    },
+               },
+               orderBy: {
+                    createdAt: "desc",
+               },
+               take: 10,
+          })
 
-		await cache.setValue(cacheKey, results)
+          await cache.setValue(cacheKey, results)
 
-		return res.status(200).json(
-			new ApiResponse(200, "Search for results is successful", {
-				results,
-			})
-		)
-	}
+          return res.status(200).json(
+               new ApiResponse(200, "Search for results is successful", {
+                    results,
+               })
+          )
+     }
 )
 
 const getSearchSuggestions = asyncHandler(
-	async (req: ApiRequest, res: Response): Promise<any> => {
-		const { query } = req.query
+     async (req: ApiRequest, res: Response): Promise<any> => {
+          const { query } = req.query
 
-		const queryValidation = querySchema.safeParse({
-			query: query?.toString().trim(),
-		})
+          const queryValidation = querySchema.safeParse({
+               query: query?.toString().trim(),
+          })
 
-		if (!queryValidation.success)
-			throw new ApiError("invalid query", 400, [
-				{ ...queryValidation.error, name: "queryValidation error" },
-			])
+          if (!queryValidation.success)
+               throw new ApiError("invalid query", 400, [
+                    { ...queryValidation.error, name: "queryValidation error" },
+               ])
 
-		const parsedQuery = queryValidation.data
+          const parsedQuery = queryValidation.data
 
-		const suggestions = await prisma.$transaction(async prisma => {
-			const postSuggestions = await prisma.article.findMany({
-				where: {
-					title: {
-						contains: String(parsedQuery.query),
-					},
-				},
-				select: {
-					title: true,
-				},
-				take: 3,
-			})
+          const suggestions = await prisma.$transaction(async prisma => {
+               const postSuggestions = await prisma.article.findMany({
+                    where: {
+                         title: {
+                              contains: String(parsedQuery.query),
+                         },
+                    },
+                    select: {
+                         title: true,
+                    },
+                    take: 3,
+               })
 
-			const userAcounts = await prisma.user.findMany({
-				where: {
-					name: {
-						contains: String(parsedQuery.query),
-					},
-				},
-				select: {
-					id: true,
-					name: true,
-					avatar: true,
-				},
-				take: 3,
-			})
+               const userAcounts = await prisma.user.findMany({
+                    where: {
+                         name: {
+                              contains: String(parsedQuery.query),
+                         },
+                    },
+                    select: {
+                         id: true,
+                         name: true,
+                         avatar: true,
+                    },
+                    take: 3,
+               })
 
-			return {
-				postSuggestions,
-				userAcounts,
-			}
+               return {
+                    postSuggestions,
+                    userAcounts,
+               }
+          })
 
-		})
-
-		return res
-			.status(200)
-			.json(
-				new ApiResponse(
-					200,
-					"Search suggestion fetch success!",
-					suggestions
-				)
-			)
-	}
+          return res
+               .status(200)
+               .json(
+                    new ApiResponse(
+                         200,
+                         "Search suggestion fetch success!",
+                         suggestions
+                    )
+               )
+     }
 )
 
 const getImagePreview = asyncHandler(
-	async (req: ApiRequest, res: Response): Promise<any> => {
-		const { postId } = req.params
+     async (req: ApiRequest, res: Response): Promise<any> => {
+          const { postId } = req.params
 
-		const parsetPostId = postId.trim()
+          const parsetPostId = postId.trim()
 
-		if (!parsetPostId || parsetPostId.length === 0 || !validate(postId))
-			throw new ApiError("Missing or Invalid postId", 400)
+          if (!parsetPostId || parsetPostId.length === 0 || !validate(postId))
+               throw new ApiError("Missing or Invalid postId", 400)
 
-		const cacheKey = `post:${parsetPostId}`
+          const cacheKey = `post:${parsetPostId}`
 
-		const chachePost = (await cache.getValue(cacheKey)) as Article | null
+          const chachePost = (await cache.getValue(cacheKey)) as Article | null
 
-		if (chachePost) {
-			return res.status(200).json(
-				new ApiResponse(200, "Image preview fetch successful", {
-					image_url: chachePost.image,
-				})
-			)
-		}
+          if (chachePost) {
+               return res.status(200).json(
+                    new ApiResponse(200, "Image preview fetch successful", {
+                         image_url: chachePost.image,
+                    })
+               )
+          }
 
-		const dbPost = await prisma.article.findUnique({
-			where: {
-				id: parsetPostId,
-			},
-		})
+          const dbPost = await prisma.article.findUnique({
+               where: {
+                    id: parsetPostId,
+               },
+          })
 
-		if (!dbPost) {
-			throw new ApiError("Post not found!", 404)
-		}
+          if (!dbPost) {
+               throw new ApiError("Post not found!", 404)
+          }
 
-		await cache.setValue(cacheKey, dbPost)
+          await cache.setValue(cacheKey, dbPost)
 
-		return res.status(200).json(
-			new ApiResponse(200, "Image preview fetch successful", {
-				image_url: dbPost.image,
-			})
-		)
-	}
+          return res.status(200).json(
+               new ApiResponse(200, "Image preview fetch successful", {
+                    image_url: dbPost.image,
+               })
+          )
+     }
 )
 
 const getPostStats = asyncHandler(async (req: ApiRequest, res: Response) => {
-	const { postId } = req.params
+     const { postId } = req.params
 
-	const validationRessult = uuidSchema.safeParse(postId)
-	if (!validationRessult.success) {
-		throw new ApiError("invalid postId", 400, [
-			{ ...validationRessult.error, name: "validation error" },
-		])
-	}
+     const validationRessult = uuidSchema.safeParse(postId)
+     if (!validationRessult.success) {
+          throw new ApiError("invalid postId", 400, [
+               { ...validationRessult.error, name: "validation error" },
+          ])
+     }
 
-	const cacheKey = `stats:${postId}`
-	const cachedRecord = await cache.getValue(cacheKey)
+     const cacheKey = `stats:${postId}`
+     const cachedRecord = await cache.getValue(cacheKey)
 
-	if (cachedRecord) {
-		return res.status(200).json(
-			new ApiResponse(200, "post stats fetched successfully!", {
-				stats: cachedRecord,
-			})
-		)
-	}
+     if (cachedRecord) {
+          return res.status(200).json(
+               new ApiResponse(200, "post stats fetched successfully!", {
+                    stats: cachedRecord,
+               })
+          )
+     }
 
-	const postStats = await prisma.$transaction(async prisma => {
-		const likeCount = await prisma.like.count({
-			where: {
-				articleId: postId,
-			},
-		})
+     const postStats = await prisma.$transaction(async prisma => {
+          const likeCount = await prisma.like.count({
+               where: {
+                    AND: [{ articleId: postId }, { parentCommentId: null }],
+               },
+          })
 
-		const commentCount = await prisma.comment.count({
-			where: {
-				articleId: postId,
-			},
-		})
+          const commentCount = await prisma.comment.count({
+               where: {
+                    articleId: postId,
+               },
+          })
 
-		return {
-			likeCount,
-			commentCount,
-		}
-	})
-	await cache.setValue(cacheKey, postStats)
+          return {
+               likeCount,
+               commentCount,
+          }
+     })
+     await cache.setValue(cacheKey, postStats)
 
-	return res.status(200).json(
-		new ApiResponse(200, "post stats fetched successfully!", {
-			stats: postStats,
-		})
-	)
+     return res.status(200).json(
+          new ApiResponse(200, "post stats fetched successfully!", {
+               stats: postStats,
+          })
+     )
 })
 
 export {
-	createPost,
-	getImagePreview,
-	getPostById,
-	getUserPosts,
-	deletePost,
-	updatePost,
-	getAllPosts,
-	getSearchResults,
-	getSearchSuggestions,
-	getPostStats,
+     createPost,
+     getImagePreview,
+     getPostById,
+     getUserPosts,
+     deletePost,
+     updatePost,
+     getAllPosts,
+     getSearchResults,
+     getSearchSuggestions,
+     getPostStats,
 }
