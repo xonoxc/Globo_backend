@@ -92,7 +92,7 @@ class CacheService {
                     }
                } while (cursor !== 0)
           } catch (error) {
-               throw new Errro(
+               throw new Error(
                     `Error while deleting the matching pattern : ${error}`
                )
           }

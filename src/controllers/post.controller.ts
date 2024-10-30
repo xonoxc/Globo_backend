@@ -253,21 +253,30 @@ const updatePost = asyncHandler(async (req: ApiRequest, res: Response) => {
 
      let updatedImageSecureUrl: string | null = null
 
-     if (req.files && Array.isArray(req.files)) {
+     console.log(req.files && Array.isArray(req.files))
+
+     if (req.files && (Array.isArray(req.files)|| Array.isArray(req.files.image))) {
           if (req.files.image.length > 0) {
                const imageLocalPath = req.files.image[0].path
+                
+               console.log("imageLocalPath", imageLocalPath)
 
                const deletionResponse = await cloudinary.deleteFile(
                     oldPost.image as string
                )
+               console.log("deleteResponse:", deletionResponse)
 
                if (!deletionResponse) {
                     throw new ApiError("Image url corrupt", 500)
                }
+
                updatedImageSecureUrl =
                     await cloudinary.uploadFile(imageLocalPath)
           }
      }
+
+     console.log("updatedImageSecureUrl", updatedImageSecureUrl)
+      
      const updates = { ...validationResponse.data }
 
      if (updatedImageSecureUrl) {

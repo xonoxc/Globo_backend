@@ -107,7 +107,7 @@ const getPostComments = asyncHandler(async (req: ApiRequest, res: Response) => {
           )
      }
 
-     const pageSize = 2
+     const pageSize = 5
      const skip = (Number(page) - 1) * pageSize
 
      const comments = await prisma.comment.findMany({
@@ -217,7 +217,9 @@ const deleteComment = asyncHandler(async (req: ApiRequest, res: Response) => {
      if (!delteResult) throw new ApiError("Cannot delete comment", 500)
 
      await cache.deleteValue(`commentCountId:${delteResult.articleId}`)
-     await cache.deleteValue(`commentsId:${delteResult.articleId}`)
+     await cache.deleteMatchingKeys(
+          `commentsId:${delteResult.articleId}-page:*`
+     )
      await cache.deleteValue(`stats:${delteResult.articleId}`)
 
      return res

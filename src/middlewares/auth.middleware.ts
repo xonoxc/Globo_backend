@@ -8,38 +8,38 @@ import { tokenPayload } from "../types/tokenPayload"
 import { ApiRequest } from "../types/ApiRequest"
 
 const authMiddleware = asyncHandler(
-	async (
-		req: ApiRequest,
-		_: Response,
-		next: NextFunction
-	): Promise<void> => {
-		try {
-			const token =
-				req.cookies?.accessToken ||
-				req.header("Authorization")?.replace("Bearer", "")
+     async (
+          req: ApiRequest,
+          _: Response,
+          next: NextFunction
+     ): Promise<void> => {
+          try {
+               const token =
+                    req.cookies?.accessToken ||
+                    req.header("Authorization")?.replace("Bearer", "")
 
-			if (!token) throw new ApiError("Unauthorized Request!", 401)
+               if (!token) throw new ApiError("Unauthorized Request!", 401)
 
-			const decodedToken = jwt.verify(
-				token,
-				env.ACCESS_TOKEN_SECRET
-			) as tokenPayload
+               const decodedToken = jwt.verify(
+                    token,
+                    env.ACCESS_TOKEN_SECRET
+               ) as tokenPayload
 
-			const user = await prisma.user.findUnique({
-				where: {
-					id: decodedToken?.id,
-				},
-			})
+               const user = await prisma.user.findUnique({
+                    where: {
+                         id: decodedToken?.id,
+                    },
+               })
 
-			if (!user) throw new ApiError("Invalid accessToken", 401)
+               if (!user) throw new ApiError("Invalid accessToken", 401)
 
-			req.user = user
+               req.user = user
 
-			next()
-		} catch (err: any) {
-			throw new ApiError("Unauthorized Request", 401, err.message)
-		}
-	}
+               next()
+          } catch (err: any) {
+               throw new ApiError("Unauthorized Request", 401, err.message)
+          }
+     }
 )
 
 export default authMiddleware
