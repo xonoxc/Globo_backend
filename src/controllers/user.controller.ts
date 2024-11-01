@@ -22,515 +22,515 @@ import { COOKIE_OPTIONS, BCRYPT_SALT_ROUNDS } from "../constants/constants"
 /* CONTROLLERS */
 
 const registerUser = asyncHandler(
-	async (req: ApiRequest, res: Response): Promise<any> => {
-		const payload = req.body
+     async (req: ApiRequest, res: Response): Promise<any> => {
+          const payload = req.body
 
-		const validationResult = signupValidationn.safeParse(payload)
+          const validationResult = signupValidationn.safeParse(payload)
 
-		if (!validationResult.success)
-			throw new ApiError("invalid credentials ", 400, [
-				{ ...validationResult.error, name: "validation error" },
-			])
+          if (!validationResult.success)
+               throw new ApiError("invalid credentials ", 400, [
+                    { ...validationResult.error, name: "validation error" },
+               ])
 
-		const parsedPayload = validationResult.data
+          const parsedPayload = validationResult.data
 
-		const exisitingUser = await prisma.user.findFirst({
-			where: {
-				OR: [
-					{ email: parsedPayload.email },
-					{ name: parsedPayload.name },
-				],
-			},
-		})
+          const exisitingUser = await prisma.user.findFirst({
+               where: {
+                    OR: [
+                         { email: parsedPayload.email },
+                         { name: parsedPayload.name },
+                    ],
+               },
+          })
 
-		if (exisitingUser)
-			throw new ApiError(
-				"User with that given username or email already exists",
-				400
-			)
+          if (exisitingUser)
+               throw new ApiError(
+                    "User with that given username or email already exists",
+                    400
+               )
 
-		let uploadResult: (string | null)[] = []
+          let uploadResult: (string | null)[] = []
 
-		if (req.files) {
-			const fileUpload = []
-			if (
-				Array.isArray(req.files.profile) &&
-				req.files.profile.length > 0
-			) {
-				const avatarLocalPath = req.files.profile[0].path
-				fileUpload.push(cloudinary.uploadFile(avatarLocalPath))
-			}
+          if (req.files) {
+               const fileUpload = []
+               if (
+                    Array.isArray(req.files.profile) &&
+                    req.files.profile.length > 0
+               ) {
+                    const avatarLocalPath = req.files.profile[0].path
+                    fileUpload.push(cloudinary.uploadFile(avatarLocalPath))
+               }
 
-			if (
-				Array.isArray(req.files.coverImage) &&
-				req.files.coverImage.length > 0
-			) {
-				const coverImageLocalPath = req.files.coverImage[0].path
-				fileUpload.push(cloudinary.uploadFile(coverImageLocalPath))
-			}
-			uploadResult = await Promise.all(fileUpload)
-		}
+               if (
+                    Array.isArray(req.files.coverImage) &&
+                    req.files.coverImage.length > 0
+               ) {
+                    const coverImageLocalPath = req.files.coverImage[0].path
+                    fileUpload.push(cloudinary.uploadFile(coverImageLocalPath))
+               }
+               uploadResult = await Promise.all(fileUpload)
+          }
 
-		const hashedPassword = await bcrypt.hash(
-			parsedPayload.password,
-			BCRYPT_SALT_ROUNDS
-		)
+          const hashedPassword = await bcrypt.hash(
+               parsedPayload.password,
+               BCRYPT_SALT_ROUNDS
+          )
 
-		const dbTransaction = await prisma.$transaction(async prisma => {
-			const newUser = await prisma.user.create({
-				data: {
-					id: uuidv4(),
-					name: parsedPayload.name,
-					email: parsedPayload.email,
-					password: hashedPassword,
-					avatar: uploadResult.length > 0 ? uploadResult[0] : "",
-					coverImage:
-						uploadResult.length > 1 ? uploadResult[1] : "",
-				},
-			})
+          const dbTransaction = await prisma.$transaction(async prisma => {
+               const newUser = await prisma.user.create({
+                    data: {
+                         id: uuidv4(),
+                         name: parsedPayload.name,
+                         email: parsedPayload.email,
+                         password: hashedPassword,
+                         avatar: uploadResult.length > 0 ? uploadResult[0] : "",
+                         coverImage:
+                              uploadResult.length > 1 ? uploadResult[1] : "",
+                    },
+               })
 
-			const userPrefrences = await prisma.userPreferences.create({
-				data: {
-					id: uuidv4(),
-					userId: newUser.id,
-				},
-			})
+               const userPrefrences = await prisma.userPreferences.create({
+                    data: {
+                         id: uuidv4(),
+                         userId: newUser.id,
+                    },
+               })
 
-			if (!userPrefrences) {
-				throw new ApiError("Error while initializing prefs", 500)
-			}
+               if (!userPrefrences) {
+                    throw new ApiError("Error while initializing prefs", 500)
+               }
 
-			return newUser
-		})
+               return newUser
+          })
 
-		const newUser = dbTransaction
+          const newUser = dbTransaction
 
-		const apiResponse = new ApiResponse(201, "User created sucessfully", {
-			createdUser: {
-				id: newUser.id,
-				name: newUser.name,
-				email: newUser.email,
-				avatar: uploadResult.length > 0 ? uploadResult[0] : "",
-				coverImage: uploadResult.length > 1 ? uploadResult[1] : "",
-			},
-		})
+          const apiResponse = new ApiResponse(201, "User created sucessfully", {
+               createdUser: {
+                    id: newUser.id,
+                    name: newUser.name,
+                    email: newUser.email,
+                    avatar: uploadResult.length > 0 ? uploadResult[0] : "",
+                    coverImage: uploadResult.length > 1 ? uploadResult[1] : "",
+               },
+          })
 
-		return res.json(apiResponse)
-	}
+          return res.json(apiResponse)
+     }
 )
 
 const loginUser = asyncHandler(async (req: ApiRequest, res: Response) => {
-	const payload = req.body
+     const payload = req.body
 
-	const parsedPayload = loginSchema.safeParse(payload)
+     const parsedPayload = loginSchema.safeParse(payload)
 
-	if (!parsedPayload.success) {
-		throw new ApiError("invalid credentials", 400, [
-			{ ...parsedPayload.error, name: "validation error" },
-		])
-	}
+     if (!parsedPayload.success) {
+          throw new ApiError("invalid credentials", 400, [
+               { ...parsedPayload.error, name: "validation error" },
+          ])
+     }
 
-	const existingUser = await prisma.user.findFirst({
-		where: {
-			email: parsedPayload.data.email,
-		},
-	})
+     const existingUser = await prisma.user.findFirst({
+          where: {
+               email: parsedPayload.data.email,
+          },
+     })
 
-	if (!existingUser) {
-		throw new ApiError("No user with given email", 404)
-	}
+     if (!existingUser) {
+          throw new ApiError("No user with given email", 404)
+     }
 
-	const correctPassword = await isPasswordCorrect(
-		existingUser.password,
-		parsedPayload.data.password
-	)
+     const correctPassword = await isPasswordCorrect(
+          existingUser.password,
+          parsedPayload.data.password
+     )
 
-	if (!correctPassword)
-		throw new ApiError("[Authenticatio failed]; incorrect password", 400)
+     if (!correctPassword)
+          throw new ApiError("[Authenticatio failed]; incorrect password", 400)
 
-	const { accessToken, refreshToken } = await generateTokens(existingUser.id)
+     const { accessToken, refreshToken } = await generateTokens(existingUser.id)
 
-	const loggedInUser = await prisma.user.findUnique({
-		where: {
-			id: existingUser.id,
-		},
-		select: {
-			id: true,
-			name: true,
-			email: true,
-			avatar: existingUser.avatar ? true : false,
-			coverImage: existingUser.coverImage ? true : false,
-		},
-	})
+     const loggedInUser = await prisma.user.findUnique({
+          where: {
+               id: existingUser.id,
+          },
+          select: {
+               id: true,
+               name: true,
+               email: true,
+               avatar: existingUser.avatar ? true : false,
+               coverImage: existingUser.coverImage ? true : false,
+          },
+     })
 
-	return res
-		.status(200)
-		.cookie("accessToken", accessToken, COOKIE_OPTIONS)
-		.cookie("refreshToken", accessToken, COOKIE_OPTIONS)
-		.json(
-			new ApiResponse(200, "User logged in sucessfully", {
-				user: loggedInUser,
-				accessToken,
-				refreshToken,
-			})
-		)
+     return res
+          .status(200)
+          .cookie("accessToken", accessToken, COOKIE_OPTIONS)
+          .cookie("refreshToken", accessToken, COOKIE_OPTIONS)
+          .json(
+               new ApiResponse(200, "User logged in sucessfully", {
+                    user: loggedInUser,
+                    accessToken,
+                    refreshToken,
+               })
+          )
 })
 
 const getCurrentUser = asyncHandler(
-	async (req: ApiRequest, res: Response): Promise<any> => {
-		const user = req.user as User
+     async (req: ApiRequest, res: Response): Promise<any> => {
+          const user = req.user as User
 
-		return res.status(200).json(
-			new ApiResponse(200, "User fetch success!", {
-				user: {
-					id: user.id,
-					name: user.name,
-					email: user.email,
-					avatar: user.avatar,
-					coverImage: user.coverImage,
-				},
-			})
-		)
-	}
+          return res.status(200).json(
+               new ApiResponse(200, "User fetch success!", {
+                    user: {
+                         id: user.id,
+                         name: user.name,
+                         email: user.email,
+                         avatar: user.avatar,
+                         coverImage: user.coverImage,
+                    },
+               })
+          )
+     }
 )
 
 const refreshAccessToken = asyncHandler(
-	async (req: ApiRequest, res: Response) => {
-		const incomingRefreshToken =
-			req.cookies.refreshToken || req.body.refreshToken
+     async (req: ApiRequest, res: Response) => {
+          const incomingRefreshToken =
+               req.cookies.refreshToken || req.body.refreshToken
 
-		if (!incomingRefreshToken) {
-			throw new ApiError("RefreshToken not found", 400)
-		}
+          if (!incomingRefreshToken) {
+               throw new ApiError("RefreshToken not found", 400)
+          }
 
-		const cleanedToken = incomingRefreshToken
-			.replace(/^Bearer\s/, "")
-			.trim()
+          const cleanedToken = incomingRefreshToken
+               .replace(/^Bearer\s/, "")
+               .trim()
 
-		const decodedToken = jwt.verify(
-			cleanedToken,
-			String(env.REFRESH_TOKEN_SECRET)
-		) as tokenPayload
+          const decodedToken = jwt.verify(
+               cleanedToken,
+               String(env.REFRESH_TOKEN_SECRET)
+          ) as tokenPayload
 
-		const cacheKey = `userId:${decodedToken.id}`
+          const cacheKey = `userId:${decodedToken.id}`
 
-		let cacheResult = (await cache.getValue(cacheKey)) as User
+          let cacheResult = (await cache.getValue(cacheKey)) as User
 
-		if (!cacheResult) {
-			const existingUser = await prisma.user.findUnique({
-				where: {
-					id: decodedToken.id,
-				},
-			})
+          if (!cacheResult) {
+               const existingUser = await prisma.user.findUnique({
+                    where: {
+                         id: decodedToken.id,
+                    },
+               })
 
-			if (!existingUser) {
-				throw new ApiError("User not found!", 404)
-			}
+               if (!existingUser) {
+                    throw new ApiError("User not found!", 404)
+               }
 
-			await cache.setValue(cacheKey, { ...existingUser })
+               await cache.setValue(cacheKey, { ...existingUser })
 
-			cacheResult = existingUser
-		}
+               cacheResult = existingUser
+          }
 
-		if (decodedToken.id !== cacheResult.id) {
-			throw new ApiError("Token is either used or expired", 400)
-		}
+          if (decodedToken.id !== cacheResult.id) {
+               throw new ApiError("Token is either used or expired", 400)
+          }
 
-		const { accessToken, refreshToken } = await generateTokens(
-			decodedToken.id
-		)
+          const { accessToken, refreshToken } = await generateTokens(
+               decodedToken.id
+          )
 
-		return res
-			.status(200)
-			.cookie("accessToken", accessToken, COOKIE_OPTIONS)
-			.cookie("refreshToken", refreshToken, COOKIE_OPTIONS)
-			.json(
-				new ApiResponse(
-					200,
-					"AccessToken refreshed successfully!",
-					{
-						accessToken,
-						refreshToken,
-					}
-				)
-			)
-	}
+          return res
+               .status(200)
+               .cookie("accessToken", accessToken, COOKIE_OPTIONS)
+               .cookie("refreshToken", refreshToken, COOKIE_OPTIONS)
+               .json(
+                    new ApiResponse(
+                         200,
+                         "AccessToken refreshed successfully!",
+                         {
+                              accessToken,
+                              refreshToken,
+                         }
+                    )
+               )
+     }
 )
 
 const getUserProfile = asyncHandler(
-	async (req: ApiRequest, res: Response): Promise<any> => {
-		const { userId } = req.params
+     async (req: ApiRequest, res: Response): Promise<any> => {
+          const { userId } = req.params
 
-		const profile = await prisma.$transaction(async prisma => {
-			const profileStats = await prisma.user.findUnique({
-				where: { id: userId },
-				select: {
-					id: true,
-					name: true,
-					email: true,
-					avatar: true,
-					coverImage: true,
-					isVerified: true,
-					createdAt: true,
-					updatedAt: true,
-					preferences: {
-						select: {
-							proUser: true,
-							articleCount: true,
-							bio: true,
-						},
-					},
-					comments: {
-						where: {
-							userId: userId,
-						},
-						select: {
-							id: true,
-						},
-					},
-					bookmarks: {
-						where: {
-							ownerId: userId,
-						},
-						select: {
-							id: true,
-						},
-					},
-					articles: {
-						where: {
-							status: "active",
-							userId: userId,
-						},
-						select: {
-							id: true,
-							title: true,
-							createdAt: true,
-						},
-						orderBy: {
-							createdAt: "desc",
-						},
-					},
-				},
-			})
+          const profile = await prisma.$transaction(async prisma => {
+               const profileStats = await prisma.user.findUnique({
+                    where: { id: userId },
+                    select: {
+                         id: true,
+                         name: true,
+                         email: true,
+                         avatar: true,
+                         coverImage: true,
+                         isVerified: true,
+                         createdAt: true,
+                         updatedAt: true,
+                         preferences: {
+                              select: {
+                                   proUser: true,
+                                   articleCount: true,
+                                   bio: true,
+                              },
+                         },
+                         comments: {
+                              where: {
+                                   userId: userId,
+                              },
+                              select: {
+                                   id: true,
+                              },
+                         },
+                         bookmarks: {
+                              where: {
+                                   ownerId: userId,
+                              },
+                              select: {
+                                   id: true,
+                              },
+                         },
+                         articles: {
+                              where: {
+                                   status: "active",
+                                   userId: userId,
+                              },
+                              select: {
+                                   id: true,
+                                   title: true,
+                                   createdAt: true,
+                              },
+                              orderBy: {
+                                   createdAt: "desc",
+                              },
+                         },
+                    },
+               })
 
-			const following = await prisma.connection.count({
-				where: { followerId: userId },
-			})
+               const following = await prisma.connection.count({
+                    where: { followerId: userId },
+               })
 
-			const followers = await prisma.connection.count({
-				where: { followingId: userId },
-			})
+               const followers = await prisma.connection.count({
+                    where: { followingId: userId },
+               })
 
-			const isFollowing = await prisma.connection.findFirst({
-				where: {
-					followerId: req.user?.id,
-					followingId: userId,
-				},
-			})
+               const isFollowing = await prisma.connection.findFirst({
+                    where: {
+                         followerId: req.user?.id,
+                         followingId: userId,
+                    },
+               })
 
-			const follows = await prisma.connection.findFirst({
-				where: {
-					followerId: userId,
-					followingId: req.user?.id,
-				}
-			})
+               const follows = await prisma.connection.findFirst({
+                    where: {
+                         followerId: userId,
+                         followingId: req.user?.id,
+                    },
+               })
 
-			return {
-				...profileStats,
-				following,
-				followers,
-				isFollowing: !!isFollowing,
-				follows: !!follows
-			}
-		})
+               return {
+                    ...profileStats,
+                    following,
+                    followers,
+                    isFollowing: !!isFollowing,
+                    follows: !!follows,
+               }
+          })
 
-		if (!profile) throw new ApiError("user profile not found", 404)
+          if (!profile) throw new ApiError("user profile not found", 404)
 
-		return res.json(
-			new ApiResponse(200, "User profile fetch success!", {
-				profile,
-			})
-		)
-	}
+          return res.json(
+               new ApiResponse(200, "User profile fetch success!", {
+                    profile,
+               })
+          )
+     }
 )
 
 const updateUserProfile = asyncHandler(
-	async (req: ApiRequest, res: Response) => {
-		const payload = req.body
+     async (req: ApiRequest, res: Response) => {
+          const payload = req.body
 
-		const validationResult = updateUserSchema.safeParse(payload)
+          const validationResult = updateUserSchema.safeParse(payload)
 
-		if (!validationResult.success)
-			throw new ApiError("invalid credentials crdrentials", 400, [
-				{ ...validationResult.error, name: "validation error" },
-			])
+          if (!validationResult.success)
+               throw new ApiError("invalid credentials crdrentials", 400, [
+                    { ...validationResult.error, name: "validation error" },
+               ])
 
-		const parsedPayload = validationResult.data
+          const parsedPayload = validationResult.data
 
-		const updateData: Partial<User> = {}
-		if (parsedPayload.name) updateData.name = parsedPayload.name
-		if (parsedPayload.email) updateData.email = parsedPayload.email
+          const updateData: Partial<User> = {}
+          if (parsedPayload.name) updateData.name = parsedPayload.name
+          if (parsedPayload.email) updateData.email = parsedPayload.email
 
-		const userId = req.user?.id
+          const userId = req.user?.id
 
-		if (req.files) {
-			const fileDelete = []
-			const fileUpload = []
-			if (
-				Array.isArray(req.files.profile) &&
-				req.files.profile.length > 0
-			) {
-				fileDelete.push(
-					cloudinary.deleteFile(req.user?.avatar as string)
-				)
+          if (req.files) {
+               const fileDelete = []
+               const fileUpload = []
+               if (
+                    Array.isArray(req.files.profile) &&
+                    req.files.profile.length > 0
+               ) {
+                    fileDelete.push(
+                         cloudinary.deleteFile(req.user?.avatar as string)
+                    )
 
-				const avatarLocalPath = req.files.profile[0].path
+                    const avatarLocalPath = req.files.profile[0].path
 
-				fileUpload.push(cloudinary.uploadFile(avatarLocalPath))
-			}
-			if (
-				Array.isArray(req.files.coverImage) &&
-				req.files.coverImage.length > 0
-			) {
-				fileDelete.push(
-					cloudinary.deleteFile(req.user?.coverImage as string)
-				)
+                    fileUpload.push(cloudinary.uploadFile(avatarLocalPath))
+               }
+               if (
+                    Array.isArray(req.files.coverImage) &&
+                    req.files.coverImage.length > 0
+               ) {
+                    fileDelete.push(
+                         cloudinary.deleteFile(req.user?.coverImage as string)
+                    )
 
-				const coverImageLocalPath = req.files.coverImage[0].path
+                    const coverImageLocalPath = req.files.coverImage[0].path
 
-				fileUpload.push(cloudinary.uploadFile(coverImageLocalPath))
-			}
+                    fileUpload.push(cloudinary.uploadFile(coverImageLocalPath))
+               }
 
-			await Promise.all(fileDelete)
-			const [updatedAvatarUrl, updatedCoverImageUrl] =
-				await Promise.all(fileUpload)
+               await Promise.all(fileDelete)
+               const [updatedAvatarUrl, updatedCoverImageUrl] =
+                    await Promise.all(fileUpload)
 
-			updateData.avatar = updatedAvatarUrl
-			updateData.coverImage = updatedCoverImageUrl
-		}
+               updateData.avatar = updatedAvatarUrl
+               updateData.coverImage = updatedCoverImageUrl
+          }
 
-		const upadatePromises = []
+          const upadatePromises = []
 
-		if (Object.keys(updateData).length > 0) {
-			upadatePromises.push(
-				prisma.user.update({
-					where: {
-						id: userId,
-					},
-					data: updateData,
-					select: {
-						id: true,
-						name: true,
-						email: true,
-						avatar: true,
-						coverImage: true,
-						isVerified: true,
-						createdAt: true,
-						updatedAt: true,
-					},
-				})
-			)
-		}
+          if (Object.keys(updateData).length > 0) {
+               upadatePromises.push(
+                    prisma.user.update({
+                         where: {
+                              id: userId,
+                         },
+                         data: updateData,
+                         select: {
+                              id: true,
+                              name: true,
+                              email: true,
+                              avatar: true,
+                              coverImage: true,
+                              isVerified: true,
+                              createdAt: true,
+                              updatedAt: true,
+                         },
+                    })
+               )
+          }
 
-		if (parsedPayload.bio) {
-			upadatePromises.push(
-				prisma.userPreferences.update({
-					where: {
-						userId: userId,
-					},
-					data: {
-						bio: parsedPayload.bio,
-					},
-				})
-			)
-		}
+          if (parsedPayload.bio) {
+               upadatePromises.push(
+                    prisma.userPreferences.update({
+                         where: {
+                              userId: userId,
+                         },
+                         data: {
+                              bio: parsedPayload.bio,
+                         },
+                    })
+               )
+          }
 
-		const updateResult = await Promise.all(upadatePromises)
+          const updateResult = await Promise.all(upadatePromises)
 
-		await cache.deleteValue("feed")
-		await cache.deleteValue(`postsBy:${userId}`)
-		await cache.deleteValue(`commentsId`)
-		await cache.deleteValue(`repliesCommentId`)
-		await cache.deleteValue(`repliesCommentId`)
+          await cache.deleteValue("feed")
+          await cache.deleteValue(`postsBy:${userId}`)
+          await cache.deleteValue(`commentsId`)
+          await cache.deleteValue(`repliesCommentId`)
+          await cache.deleteValue(`repliesCommentId`)
 
-		return res
-			.status(200)
-			.json(
-				new ApiResponse(
-					200,
-					"details updated successfully!",
-					updateResult
-				)
-			)
-	}
+          return res
+               .status(200)
+               .json(
+                    new ApiResponse(
+                         200,
+                         "details updated successfully!",
+                         updateResult
+                    )
+               )
+     }
 )
 
 const logout = asyncHandler(
-	async (_: ApiRequest, res: Response): Promise<any> => {
-		return res
-			.status(200)
-			.clearCookie("accessToken", COOKIE_OPTIONS)
-			.clearCookie("refreshToken", COOKIE_OPTIONS)
-			.json(new ApiResponse(200, "User logged out successfully!", {}))
-	}
+     async (_: ApiRequest, res: Response): Promise<any> => {
+          return res
+               .status(200)
+               .clearCookie("accessToken", COOKIE_OPTIONS)
+               .clearCookie("refreshToken", COOKIE_OPTIONS)
+               .json(new ApiResponse(200, "User logged out successfully!", {}))
+     }
 )
 
 const getUserSubscription = asyncHandler(
-	async (req: ApiRequest, res: Response) => {
-		const { userId } = req.params
+     async (req: ApiRequest, res: Response) => {
+          const { userId } = req.params
 
-		if (!userId || !validate(userId))
-			throw new ApiError("invalid or missing user id", 400)
+          if (!userId || !validate(userId))
+               throw new ApiError("invalid or missing user id", 400)
 
-		const cachedKey = `sub:${userId}`
-		let cacheResult = (await cache.getValue(cachedKey)) as {
-			proUser: boolean
-		}
+          const cachedKey = `sub:${userId}`
+          let cacheResult = (await cache.getValue(cachedKey)) as {
+               proUser: boolean
+          }
 
-		if (cacheResult) {
-			return res
-				.status(200)
-				.json(
-					new ApiResponse(
-						200,
-						"Subscription fetched successfully",
-						cacheResult
-					)
-				)
-		}
+          if (cacheResult) {
+               return res
+                    .status(200)
+                    .json(
+                         new ApiResponse(
+                              200,
+                              "Subscription fetched successfully",
+                              cacheResult
+                         )
+                    )
+          }
 
-		const subscription = await prisma.userPreferences.findUnique({
-			where: {
-				userId,
-			},
-			select: {
-				proUser: true,
-			},
-		})
+          const subscription = await prisma.userPreferences.findUnique({
+               where: {
+                    userId,
+               },
+               select: {
+                    proUser: true,
+               },
+          })
 
-		if (!subscription) throw new ApiError("no subscription found", 404)
+          if (!subscription) throw new ApiError("no subscription found", 404)
 
-		await cache.setValue(cachedKey, subscription)
+          await cache.setValue(cachedKey, subscription)
 
-		return res
-			.status(200)
-			.json(
-				new ApiResponse(
-					200,
-					"Subscription fetched successfully",
-					subscription
-				)
-			)
-	}
+          return res
+               .status(200)
+               .json(
+                    new ApiResponse(
+                         200,
+                         "Subscription fetched successfully",
+                         subscription
+                    )
+               )
+     }
 )
 
 export {
-	registerUser,
-	loginUser,
-	getCurrentUser,
-	logout,
-	refreshAccessToken,
-	getUserProfile,
-	updateUserProfile,
-	getUserSubscription,
+     registerUser,
+     loginUser,
+     getCurrentUser,
+     logout,
+     refreshAccessToken,
+     getUserProfile,
+     updateUserProfile,
+     getUserSubscription,
 }

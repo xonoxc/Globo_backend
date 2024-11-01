@@ -255,10 +255,13 @@ const updatePost = asyncHandler(async (req: ApiRequest, res: Response) => {
 
      console.log(req.files && Array.isArray(req.files))
 
-     if (req.files && (Array.isArray(req.files)|| Array.isArray(req.files.image))) {
+     if (
+          req.files &&
+          (Array.isArray(req.files) || Array.isArray(req.files.image))
+     ) {
           if (req.files.image.length > 0) {
                const imageLocalPath = req.files.image[0].path
-                
+
                console.log("imageLocalPath", imageLocalPath)
 
                const deletionResponse = await cloudinary.deleteFile(
@@ -276,7 +279,7 @@ const updatePost = asyncHandler(async (req: ApiRequest, res: Response) => {
      }
 
      console.log("updatedImageSecureUrl", updatedImageSecureUrl)
-      
+
      const updates = { ...validationResponse.data }
 
      if (updatedImageSecureUrl) {

@@ -5,129 +5,129 @@ import { prisma } from "../lib/prisma.client"
 import { cache } from "../caching/redis"
 
 const toggleBookmark = asyncHandler(async (req: ApiRequest, res: Response) => {
-	const { articleId } = req.params
+     const { articleId } = req.params
 
-	const validationResult = uuidSchema.safeParse(articleId)
-	if (!validationResult.success) {
-		throw new ApiError("Invalid article id!", 400, [
-			{ ...validationResult.error, name: "validation error" },
-		])
-	}
+     const validationResult = uuidSchema.safeParse(articleId)
+     if (!validationResult.success) {
+          throw new ApiError("Invalid article id!", 400, [
+               { ...validationResult.error, name: "validation error" },
+          ])
+     }
 
-	const parsedArticleId = validationResult.data
+     const parsedArticleId = validationResult.data
 
-	const ownerId = req.user?.id as string
+     const ownerId = req.user?.id as string
 
-	const resultant = await prisma.$transaction(async prisma => {
-		const eixstingBookmark = await prisma.bookmark.findFirst({
-			where: {
-				AND: [{ ownerId: ownerId }, { articleId: parsedArticleId }],
-			},
-		})
+     const resultant = await prisma.$transaction(async prisma => {
+          const eixstingBookmark = await prisma.bookmark.findFirst({
+               where: {
+                    AND: [{ ownerId: ownerId }, { articleId: parsedArticleId }],
+               },
+          })
 
-		if (!eixstingBookmark) {
-			return await prisma.bookmark.create({
-				data: {
-					articleId: parsedArticleId,
-					ownerId: ownerId,
-				},
-			})
-		}
+          if (!eixstingBookmark) {
+               return await prisma.bookmark.create({
+                    data: {
+                         articleId: parsedArticleId,
+                         ownerId: ownerId,
+                    },
+               })
+          }
 
-		return await prisma.bookmark.delete({
-			where: {
-				id: eixstingBookmark.id,
-			},
-		})
-	})
+          return await prisma.bookmark.delete({
+               where: {
+                    id: eixstingBookmark.id,
+               },
+          })
+     })
 
-	if (!resultant) throw new ApiError("Cannot toggle bookmark!", 500)
+     if (!resultant) throw new ApiError("Cannot toggle bookmark!", 500)
 
-	await cache.deleteValue(`bookmarksBy:${ownerId}`)
+     await cache.deleteValue(`bookmarksBy:${ownerId}`)
 
-	return res.status(201).json(
-		new ApiResponse(201, "Bookmark toggled successfully!", {
-			resultant,
-		})
-	)
+     return res.status(201).json(
+          new ApiResponse(201, "Bookmark toggled successfully!", {
+               resultant,
+          })
+     )
 })
 
 const getUserBookmarks = asyncHandler(
-	async (req: ApiRequest, res: Response) => {
-		const { userId } = req.params
+     async (req: ApiRequest, res: Response) => {
+          const { userId } = req.params
 
-		const cacheKey = `bookmarksBy:${userId}`
+          const cacheKey = `bookmarksBy:${userId}`
 
-		let cacheResult = await cache.getValue(cacheKey)
-		if (cacheResult) {
-			return res
-				.status(200)
-				.json(
-					new ApiResponse(
-						200,
-						"Bookmarks fetched successfully!",
-						cacheResult
-					)
-				)
-		}
+          let cacheResult = await cache.getValue(cacheKey)
+          if (cacheResult) {
+               return res
+                    .status(200)
+                    .json(
+                         new ApiResponse(
+                              200,
+                              "Bookmarks fetched successfully!",
+                              cacheResult
+                         )
+                    )
+          }
 
-		const bookmarks = await prisma.bookmark.findMany({
-			where: {
-				ownerId: userId,
-			},
-			include: {
-				post: {
-					select: {
-						title: true,
-					},
-				},
-			},
-			orderBy: {
-				createdAt: "desc",
-			},
-		})
+          const bookmarks = await prisma.bookmark.findMany({
+               where: {
+                    ownerId: userId,
+               },
+               include: {
+                    post: {
+                         select: {
+                              title: true,
+                         },
+                    },
+               },
+               orderBy: {
+                    createdAt: "desc",
+               },
+          })
 
-		await cache.setValue(cacheKey, bookmarks)
+          await cache.setValue(cacheKey, bookmarks)
 
-		return res
-			.status(200)
-			.json(
-				new ApiResponse(
-					200,
-					"Bookmarks fetched successfully!",
-					bookmarks
-				)
-			)
-	}
+          return res
+               .status(200)
+               .json(
+                    new ApiResponse(
+                         200,
+                         "Bookmarks fetched successfully!",
+                         bookmarks
+                    )
+               )
+     }
 )
 
 const getPostBookmarkStatus = asyncHandler(
-	async (req: ApiRequest, res: Response) => {
-		const { articleId } = req.params
+     async (req: ApiRequest, res: Response) => {
+          const { articleId } = req.params
 
-		const validationResult = uuidSchema.safeParse(articleId)
-		if (!validationResult.success) {
-			throw new ApiError("Invalid article id!", 400, [
-				{ ...validationResult.error, name: "validation error" },
-			])
-		}
+          const validationResult = uuidSchema.safeParse(articleId)
+          if (!validationResult.success) {
+               throw new ApiError("Invalid article id!", 400, [
+                    { ...validationResult.error, name: "validation error" },
+               ])
+          }
 
-		const parsedAtricleId = validationResult.data
-		const isBookmarked = await prisma.bookmark.findFirst({
-			where: {
-				AND: [
-					{ ownerId: req.user?.id as string },
-					{ articleId: parsedAtricleId },
-				],
-			},
-		})
+          const parsedAtricleId = validationResult.data
+          const isBookmarked = await prisma.bookmark.findFirst({
+               where: {
+                    AND: [
+                         { ownerId: req.user?.id as string },
+                         { articleId: parsedAtricleId },
+                    ],
+               },
+          })
 
-		return res.status(200).json(
-			new ApiResponse(200, "Bookmark status fetched successfully!", {
-				isBookmarked: !!isBookmarked,
-			})
-		)
-	}
+          return res.status(200).json(
+               new ApiResponse(200, "Bookmark status fetched successfully!", {
+                    isBookmarked: !!isBookmarked,
+               })
+          )
+     }
 )
 
 export { toggleBookmark, getUserBookmarks, getPostBookmarkStatus }
