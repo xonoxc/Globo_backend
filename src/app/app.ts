@@ -73,6 +73,12 @@ import bookmarkRouter from "../routes/bookmark.routes"
 import connectionRouter from "../routes/connect.routes"
 import likeRouter from "../routes/likes.routes"
 
+app.get("/", (_, res) => {
+     return res.json({
+          message: "Api is live !",
+     })
+})
+
 apiRouter.use("/usr", userRouter)
 apiRouter.use("/hc", healthCheckRouter)
 apiRouter.use("/p", postRouter)
