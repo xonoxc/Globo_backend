@@ -8,6 +8,7 @@ import { Readable } from "stream"
 
 const groq = new Groq({ apiKey: env.AI_API_KEY })
 
+
 const getCompletion = asyncHandler(async (req: ApiRequest, res: Response) => {
      const { content, retry }: { content: string; retry: boolean } = req.body
 
